@@ -25,13 +25,18 @@ import plotly.plotly as py
 from plotly.graph_objs import *
 import plotly.tools as tls
 import numpy as np
+from flask import Flask, redirect, url_for, session, request
+from flask_oauthlib.client import OAuth, OAuthException
+sys.path.append( "../Modules")
+from helpers import loadFile
 
-def getSpotifyCred(username):
-    SPOTIPY_CLIENT_ID = "93cb0aa1e52240229a3a47eab39c9db3"
-    SPOTIPY_CLIENT_SECRET = "cf523e23cba740c5b9169a589716b8dd"
-    SPOTIPY_REDIRECT_URI = "http://afireintheattic.com/"
+def getSpotifyCred(username, config):
+    SPOTIPY_CLIENT_ID = config['SPOTIFY_APP_ID']
+    SPOTIPY_CLIENT_SECRET = config['SPOTIFY_APP_SECRET']
+    SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
     scope = 'user-library-read'
     token = util.prompt_for_user_token(username, scope, SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+    print token
     if token:
         sp = spotipy.Spotify(auth = token)
         return sp
@@ -197,13 +202,16 @@ def searchUserPlaylists(sp, user, tracks):
 
 def main():
 
-    # ## load tracks in playlist
-    artist_name = sys.argv[1]
-    title = sys.argv[2]
-    if len(sys.argv) > 3:
-        album = sys.argv[3]
+    username = sys.argv[1]
+    artist_name = sys.argv[2]
+    title = sys.argv[3]
+    if len(sys.argv) > 4:
+        album = sys.argv[4]
     else:
         album = None
+
+    config = loadFile("config", "config.csv")
+
 
     username = "kroening"
 

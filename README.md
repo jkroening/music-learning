@@ -12,8 +12,6 @@ Inside:
 - Cluster Playlists
   - cluster.py -- returns multiple playlists from one, clustering songs in the output by Echonest term similarity
   - sort_genre.py -- returns multiple playlists from one, clustering songs in the output by Spotify genre similarity
-- Databases
-  - databases for use in scripts
 - DRM Removal
   - drmstrip_video.py -- DRM removal for m4v files
   - drmstrip.py -- DRM removal for m4a files
@@ -27,7 +25,7 @@ Inside:
   - shuffle.py -- randomly shuffles a list of Spotify uris
   - wp_postportfolio.py -- takes Wordpress post text, and returns a custom Wordpress portfolio format
 - Modules
-  - db_methods.py -- methods used to search and save databases found in Databases
+  - db_methods.py -- methods used to search and save databases
   - helpers.py -- file and API helper functions
   - spotify_methods.py -- Spotify-specific API and return object helper methods
 - Playlist Flow

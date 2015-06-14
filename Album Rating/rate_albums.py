@@ -68,7 +68,7 @@ def main():
             avg = (score / len(ratings)) + 0.42 / (std ** 2.0)
             album_score = avg * 10.76 ## scaling applied to set ceiling album "OK Computer" at 1000 points
             if album_score >= 875:
-                album_rating = 5.0
+                album_rating = 5.0`
             elif album_score >= 825:
                 album_rating = 4.5
             elif album_score >= 700:
@@ -90,44 +90,6 @@ def main():
             album_ratings = album_ratings.append([{'spotify_album_id' : album_id, 'artist' : artist, 'album' : album, 'year' : album_data['year'], 'album_rating' : album_rating, 'album_score' : album_score}])
 
     saveDataFrame(album_ratings, "../Databases", "album_ratings_db.csv")
-    # for track in in_tracks:
-    #     if not lookupSongBySpotifyID(track, echonest_song_db):
-    #         song = pullEchoNestSong(api_key, track)
-    #         echonest_song_db = echonest_song_db.append(song, ignore_index = True)
-    # saveDataFrame(echonest_song_db, "../Databases", "echonest_song_db.csv")
-
-    # ## subset song database on tracks in playlist
-    # db_subset = subsetDataFrame(echonest_song_db, in_tracks)
-
-    # ## if user wants to use terms to cluster songs in walk, then third passed argument should be "terms"
-    # if len(sys.argv) > 3 and sys.argv[3] == "terms":
-    #     ## build dict of artists with echonest terms
-    #     artist_db = buildArtistDataFrame(in_tracks, echonest_song_db, echonest_artist_db, api_key)
-    #     saveDataFrame(artist_db, "../Databases", "echonest_artist_db.csv")
-
-    #     ## add artist terms to songs subset db
-    #     artist_db = artist_db.drop('artist_name', 1) ## because capitalization might be different, drop 'artist_name' from one of the dataframes before merging
-    #     db = addArtistTermsToSongs(db_subset, artist_db)
-    # else:
-    #     db = db_subset
-
-    # cols_to_remove = ["spotify_id", "echonest_id", "title", "album", "artist_name", "echonest_artist_id", "spotify_artist_id", "duration", "time_signature", "key", "mode", "loudness"]
-    # substr_cols_to_remove = ["_freqwt", "_freq"]  ## "_freqwt" is overkill for the sake of explicitness, as "_freq" is in "_freqwt"
-    # X = dataFrameToMatrix(db, cols_to_remove, substr_cols_to_remove)
-
-    # X = centerScaleData(X)
-    # X2 = transformPCA(X, 2)
-    # clusters2 = classifyUnsupervised(X2, 3)
-    # clusters1 = classifyUnsupervised(X, 3)
-
-    # ## create directed walk starting at song index 11
-    # walk = walkPoints(X.copy(), db_subset, sys.argv[1], sys.argv[2])
-    # writeTextFile(walk, "output", "walk.txt")
-
-    # cluster_groups1 = separateMatrixClusters(X2, clusters1)
-    # cluster_groups2 = separateDataFrameClusters(db_subset, clusters2)
-    # cluster_groups3 = separateDataFrameClusters(db_subset, clusters1)
-    # # scatterplot(X, "fit_predict")
 
 
 if __name__ == "__main__":

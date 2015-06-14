@@ -23,6 +23,8 @@ sys.path.append( "../Modules")
 from helpers import loadFile
 import spotify_methods as sp
 from db_methods import lookupSongBySpotifyID, lookupArtistBySpotifyID, saveDataFrame
+sys.path.append( "../Modules")
+from helpers import loadFile
 
 def pullEchoNestSong(api_key, track):
     url_base = "http://developer.echonest.com/api/v4/song/profile"
@@ -277,9 +279,13 @@ def writeTextFile(data, location, filename):
 def main():
 
     ## set echonest API key
-    api_key = "CSS3WA3PRDUNZ0Y2J"
+    config = loadFile("../config", "config.csv")
+    api_key = config['ECHONEST_API_KEY']
     ## set plotly API key
-    tls.set_credentials_file(username='kroening', api_key='z1od1phpmi', stream_ids=['wbmkdxtwoq', 'nrpoxt699v'])
+    plotly_username = config['PLOTLY_USERNAME']
+    plotly_api_key = config['PLOTLY_API_KEY']
+    plotly_stream_ids = config['PLOTLY_STREAM_IDS']
+    tls.set_credentials_file(username=plotly_username, api_key=plotly_api_key, stream_ids=plotly_stream_ids)
 
     # ## load tracks in playlist
     in_tracks = loadFile("input", "input.txt")

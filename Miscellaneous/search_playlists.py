@@ -210,7 +210,7 @@ def main():
     else:
         album = None
 
-    config = loadFile("config", "config.csv")
+    config = loadFile("../config", "config.csv")
 
 
     username = "kroening"

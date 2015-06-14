@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 from django.utils.encoding import smart_str, smart_unicode
 import shutil
 from unidecode import unidecode
+sys.path.append( "../Modules")
+from helpers import loadFile
 
 
 def loadFile(filename):
@@ -204,7 +206,8 @@ def main():
     artists = buildArtistDict(tracks, culster)
 
     # get terms for artists
-    api_key = "CSS3WA3PRDUNZ0Y2J"
+    config = loadFile("../config", "config.csv")
+    api_key = config['ECHONEST_API_KEY']
     artists = echoNestTermLookup(api_key, artists, artist_archive, cluster_df, update)
 
     # with NAs to 0

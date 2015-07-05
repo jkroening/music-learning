@@ -22,8 +22,8 @@ def getArtist(track_id):
     sp = spotipy.Spotify()
     track = sp.track(track_id)
     artist_id = track['artists'][0]['uri']
-    artist_name = track['artists'][0]['name']
-    return artist_id, artist_name
+    artist = track['artists'][0]['name']
+    return artist_id, artist
 
 def getGenres(artist_id):
     sp = spotipy.Spotify()
@@ -106,10 +106,10 @@ def main():
     genre_set = set()
     for line in fileinput.input(sys.argv[1]):
         track_id = line.strip('http://open.spotify.com/track/').strip()
-        artist_id, artist_name = getArtist(track_id)
+        artist_id, artist = getArtist(track_id)
         sortGenres(artist_id, pop, urban, rock, track_id)
         # genres = getGenres(artist_id)
-        # print artist_name, genres
+        # print artist, genres
         # for g in genres:
         #     genre_set.add(g)
     # sorted_genres = sorted(genre_set, key=lambda item: (int(item.partition(' ')[0]) if item[0].isdigit() else float('inf'), item))

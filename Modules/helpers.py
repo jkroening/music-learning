@@ -1,15 +1,22 @@
 import os
 import time
+import csv
 import requests
 import pandas as pd
+from unidecode import unidecode
 
-def loadFile(location, filename):
+def loadFile(location, filename, as_dict = False):
     try:
         with open(os.path.join(location, filename), "U") as f:
             if ".json" in filename:
                 infile = json.load(f)
-            elif ".csv" in filename:
+            elif ".csv" in filename and not as_dict:
                 infile = pd.io.parsers.read_csv(f)
+            elif ".csv" in filename and as_dict:
+                reader = csv.reader(f)
+                infile = {}
+                for row in reader:
+                    infile[row[0]] = row[1]
             elif ".txt" in filename:
                 infile = f.readlines()
             else:
@@ -25,6 +32,11 @@ def loadFile(location, filename):
         else:
             infile = None
     return infile
+
+def writeTextFile(data, location, filename):
+    with open(os.path.join(location, filename), "w") as f:
+        for line in data:
+            f.write("%s\n" % line)
 
 def callAPI(url, payload = None):
     try:
@@ -44,3 +56,30 @@ def callAPI(url, payload = None):
         time.sleep(2)
         return callAPI(url, payload)
     return data
+
+def flattenDict(d):
+    def expand(key, value):
+        if isinstance(value, dict):
+            return [ (key + '.' + k, v) for k, v in flattenDict(value).items() ]
+        else:
+            if isinstance(value, unicode):
+                return [ (key, unidecode(value)) ]
+            else:
+                return [ (key, value) ]
+    items = [ item for k, v in d.items() for item in expand(k, v) ]
+    return dict(items)
+
+def flattenDictCustom(d):
+    """
+    Custom function to flatten a dictionary but not label children keys by parent keys.
+    """
+    def expand(key, value):
+        if isinstance(value, dict):
+            return [ (k, v) for k, v in flattenDict(value).items() ]
+        else:
+            if isinstance(value, unicode):
+                return [ (key, unidecode(value)) ]
+            else:
+                return [ (key, value) ]
+    items = [ item for k, v in d.items() for item in expand(k, v) ]
+    return dict(items)

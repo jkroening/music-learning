@@ -35,7 +35,7 @@ def main():
             track_id, spotify_uri = sp.getSpotifyTrackIDs(song)
             if not lookupSongBySpotifyID(track_id, db):
                 track = sp.pullSpotifyTrack(track_id)
-                db = db.append([{'spotify_id' : track_id, 'artist' : track['artist_name'], 'album' : track['album'], 'spotify_album_id' : track['spotify_album_id'], 'song' : track['title'], 'rating' : rating}])
+                db = db.append([{'spotify_id' : track_id, 'artist' : track['artist'], 'album' : track['album'], 'spotify_album_id' : track['spotify_album_id'], 'song' : track['title'], 'rating' : rating}])
 
     db = db.sort(['artist', 'album', 'rating'])
     saveDataFrame(db, "../Databases", "song_ratings_db.csv")

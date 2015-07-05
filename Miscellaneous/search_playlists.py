@@ -25,10 +25,11 @@ import plotly.plotly as py
 from plotly.graph_objs import *
 import plotly.tools as tls
 import numpy as np
-from flask import Flask, redirect, url_for, session, request
-from flask_oauthlib.client import OAuth, OAuthException
+# from flask import Flask, redirect, url_for, session, request
+# from flask_oauthlib.client import OAuth, OAuthException
 sys.path.append( "../Modules")
 from helpers import loadFile
+from spotify_methods import authSpotify, searchSpotifyTrack
 
 def getSpotifyCred(username, config):
     SPOTIPY_CLIENT_ID = config['SPOTIFY_APP_ID']
@@ -42,28 +43,6 @@ def getSpotifyCred(username, config):
         return sp
     else:
         print "Can't get token for", username
-
-def loadFile(location, filename):
-    try:
-        with open(os.path.join(location, filename), "U") as f:
-            if ".json" in filename:
-                infile = json.load(f)
-            elif ".csv" in filename:
-                infile = pd.io.parsers.read_csv(f)
-            elif ".txt" in filename:
-                infile = f.readlines()
-            else:
-                infile = f.read()
-    except:
-        if ".json" in filename:
-            infile = {}
-        elif ".csv" in filename:
-            infile = pd.DataFrame(index = None, columns = None)
-        elif ".txt" in filename:
-            infile = []
-        else:
-            infile = None
-    return infile
 
 def lookupSongBySpotifyID(song, df):
     track_id = getSpotifyIDs(song)[0]
@@ -117,7 +96,7 @@ def pullEchoNestSong(api_key, track):
         song.pop('analysis_url', None)
         song.pop('artist_foreign_ids', None)
         ## check to be sure it's the correct song
-        if song['artist_name'] == track['artist'] and song['title'] == track['song']:
+        if song['artist'] == track['artist'] and song['title'] == track['song']:
             ## add spotify uri to song data
             song['spotify_id'] = track_id
             ## rename keys as necessary
@@ -167,25 +146,6 @@ def getSpotifyIDs(text):
         spotify_uri = "spotify:track:%s" % track_id
     return track_id, spotify_uri
 
-def searchSpotifyTrack(artist_name, title, album = None):
-    url = "https://api.spotify.com/v1/search"
-    payload = {'q' : [artist_name, title, album], 'type': "track", 'limit' : 50, 'market' : "US"}
-    data = callAPI(url, payload)
-    tracks = []
-    for i in xrange(len(data['tracks']['items'])):
-        if album is not None:
-            if unidecode(data['tracks']['items'][i]['artists'][0]['name']).lower() == artist_name.lower() and \
-                unidecode(data['tracks']['items'][i]['album']['name']).lower() == album.lower() and \
-                unidecode(data['tracks']['items'][i]['name']).lower() == title.lower():
-                spotify_uri = data['tracks']['items'][i]['uri']
-                tracks.append(str(spotify_uri))
-        else:
-            if unidecode(data['tracks']['items'][i]['artists'][0]['name']).lower() == artist_name.lower() and \
-                unidecode(data['tracks']['items'][i]['name']).lower() == title.lower():
-                spotify_uri = data['tracks']['items'][i]['uri']
-                tracks.append(str(spotify_uri))
-    return tracks
-
 def searchUserPlaylists(sp, user, tracks):
     playlists = sp.user_playlists(user)
     for playlist in playlists['items']:
@@ -203,21 +163,21 @@ def searchUserPlaylists(sp, user, tracks):
 def main():
 
     username = sys.argv[1]
-    artist_name = sys.argv[2]
+    artist = sys.argv[2]
     title = sys.argv[3]
     if len(sys.argv) > 4:
         album = sys.argv[4]
     else:
         album = None
 
-    config = loadFile("../config", "config.csv")
+    config = loadFile("../config", "config.csv", True)
 
-
-    username = "kroening"
+    app = authSpotify(config)
+    app.run()
 
     sp = getSpotifyCred(username)
     
-    tracks= searchSpotifyTrack(artist_name, title, album)
+    tracks= searchSpotifyTrack(artist, title, album)
 
     searchUserPlaylists(sp, username, tracks)
     print "\n"

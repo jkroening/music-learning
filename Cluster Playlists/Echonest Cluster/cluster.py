@@ -54,16 +54,16 @@ def spotifyTrackLookup(track_id):
     data = callAPI(url, None)
     track_title = smart_str(data['name'])
     album_title = smart_str(data['album']['name'])
-    artist_name = smart_str(data['artists'][0]['name'])
+    artist = smart_str(data['artists'][0]['name'])
     artist_id = stripSpotifyURI(data['artists'][0]['uri'])
-    track_data = {'track_title' : track_title, 'album_title' : album_title, 'artist_name' : artist_name, 'artist_id' : artist_id, 'popularity' : data['popularity']}
+    track_data = {'track_title' : track_title, 'album_title' : album_title, 'artist' : artist, 'artist_id' : artist_id, 'popularity' : data['popularity']}
     return track_data
 
 def buildArtistDict(tracks):
     # get all unique artist uris
     artists = {}
     for r in tracks.iterrows():
-        artists[r[1]['artist_id']] = {'artist_name' : r[1]['artist_name']}
+        artists[r[1]['artist_id']] = {'artist' : r[1]['artist']}
     return artists
 
 def getTermStats(term):
@@ -170,7 +170,7 @@ def main():
             tracks = json.load(f)
             tracks = pd.DataFrame(tracks)
     except:
-        tracks = pd.DataFrame(index = None, columns = ['album_title', 'artist_id', 'artist_name', 'playlist_id', 'popularity', 'track_title'])
+        tracks = pd.DataFrame(index = None, columns = ['album_title', 'artist_id', 'artist', 'playlist_id', 'popularity', 'track_title'])
 
     # load the playlists to cluster
     playlist_locs = sys.argv[2:]
@@ -182,20 +182,20 @@ def main():
             if track_id not in tracks.index:
                 # build tracks dict
                 out = spotifyTrackLookup(track_id)
-                tracks.loc[track_id] = [out.album_title, out.artist_id, out.artist_name, -1, out.popularity, out.track_title]
+                tracks.loc[track_id] = [out.album_title, out.artist_id, out.artist, -1, out.popularity, out.track_title]
 
     # load playlist assignments
     try:
         path = "playlists"
-        cluster_df = pd.DataFrame(index = None, columns = ["artist_name", "playlist_id"])
+        cluster_df = pd.DataFrame(index = None, columns = ["artist", "playlist_id"])
         n = 0
         for filename in os.listdir(path):
             if filename.endswith(".txt"):
                 with open(os.path.join(path, filename), 'U') as f:
                     for line in f.readlines():
                         artist_id = line.split(", ")[0]
-                        artist_name = line.split(", ")[1].strip()
-                        cluster_df.loc[artist_id] = [artist_name, n]
+                        artist = line.split(", ")[1].strip()
+                        cluster_df.loc[artist_id] = [artist, n]
                     n += 1
         # with open("data/clusters.csv") as f:
         #     cluster_df = pd.io.parsers.read_csv(f, index_col = "artist_id")
@@ -206,7 +206,7 @@ def main():
     artists = buildArtistDict(tracks, culster)
 
     # get terms for artists
-    config = loadFile("../config", "config.csv")
+    config = loadFile("../config", "config.csv", True)
     api_key = config['ECHONEST_API_KEY']
     artists = echoNestTermLookup(api_key, artists, artist_archive, cluster_df, update)
 
@@ -217,7 +217,7 @@ def main():
     # may need to implement cross-val at some point
     cols = artists_X.columns.tolist()
     cols.remove('playlist_id')
-    cols.remove('artist_name')
+    cols.remove('artist')
     artists_train = artists_X[artists_X.playlist_id != -1][cols] # where playlist_id != -1, and then exclude playlist_id column from assignment
     artists_predict = artists_X[artists_X.playlist_id == -1][cols] # where playlist_id == -1, and then exclude playlist_id column from assignment
     Y_train = artists_X[artists_X.playlist_id != -1]['playlist_id'].values
@@ -321,7 +321,7 @@ def main():
                 line_out = "spotify:track:%s" % track[0]
                 f.write("%s\n" % line_out)
         with open("playlists/%s" % filename, "w") as f:
-            artist_list = zip(artists_df.artist_name[artists_df.playlist_id == n].index, artists_df.artist_name[artists_df.playlist_id == n].values)
+            artist_list = zip(artists_df.artist[artists_df.playlist_id == n].index, artists_df.artist[artists_df.playlist_id == n].values)
             artist_list = sortTuple(artist_list)
             for artist in artist_list:
                 outline = "%s, %s" % (artist[0], unidecode(artist[1]))
@@ -335,7 +335,7 @@ def main():
 
     # dataframe with artist names and playlist ids
     # users can manually edit this csv to help algorithm learn better clusters
-    cols = ['artist_name', 'playlist_id']
+    cols = ['artist', 'playlist_id']
     cluster_df = artists_df[cols]
     cluster_df = cluster_df.sort("playlist_id")
 

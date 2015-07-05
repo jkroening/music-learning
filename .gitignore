@@ -1,3 +1,6 @@
 *.txt
+*.json
+*.csv
+*.pyc
 Databases
 config

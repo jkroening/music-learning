@@ -1,6 +1,6 @@
 # music-learning
 
-A collection of scripts for organizing playlists in various ways to optimize listening experience.
+A collection of Python scripts for clustering, sorting, and organizing playlists in various ways to optimize the listening experience.
 Primarly used at http://www.aFIREintheattic.com and for the connected Spotify account https://open.spotify.com/user/kroening.
 
 Inside:

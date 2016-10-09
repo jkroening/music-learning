@@ -1,6 +1,6 @@
 *.txt
 *.json
 *.csv
-**/Modules/*.pyc
+Modules/*.pyc
 Databases
 config

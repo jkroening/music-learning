@@ -26,7 +26,7 @@ def main():
     ## load database of song ratings
     db = loadFile("../Databases", "song_ratings_db.csv")
     album_ratings = loadFile("../Databases", "album_ratings_db.csv")
-    
+
     rating = 0
     for ls in [ones, twos, threes, fours, fives]:
         ## playlists are looped in this order such that if a song is in multiple lists it's rating will end up being the highest one
@@ -51,41 +51,80 @@ def main():
                 ## don't make album ratings for singles
                 continue
             score = 0
+            countNot3 = len(np.where(r != 3))
+            countMoreThan2 = len(np.where(r > 2))
+            countMoreThan3 = len(np.where(r > 3))
             for r in ratings:
                 if r == 5:
                     score = score + 100 * 1.0
+                    scoreNot3 = score + 100 * 1.0
                 elif r == 4:
                     score = score + 80 * 1.2
+                    scoreNot3 = score + 80 * 1.2
                 elif r == 3:
                     score = score + 60 * 1.0
                 elif r == 2:
-                    score = score + 40 * 1.0
+                    score = score + 40 * 1.2
+                    scoreNot3 = score + 40 * 1.2
                 elif r == 1:
-                    score = score + 20 * 1.2
+                    score = score + 20 * 1.0
+                    scoreNot3 = score + 20 * 1.0
             std = np.std(ratings)
             if std == 0.0:
-                std = 0.31
-            avg = (score / len(ratings)) + 0.42 / (std ** 2.0)
-            album_score = avg * 10.76 ## scaling applied to set ceiling album "OK Computer" at 1000 points
-            if album_score >= 875:
-                album_rating = 5.0`
-            elif album_score >= 825:
+                std = 0.25
+
+            if countNot3 == 0:
+                adjMean = 3
+            else:
+                adjMean = scoreNot3 / countNot3
+            prop4or5 = countMoreThan3 / len(r)
+            adj1 = (adjMean - 3) * prop4or5
+            adj2 = adj1 + countMoreThan2 * 0.03
+
+            score = np.mean(ratings) + adj2
+
+            if prop4or5 == 0:
+                adjSD = std * 0.05
+            else:
+                adjSD = std * prop4or5 / len(r)
+
+            score = score - adjSD
+
+            ## min possible score: (mean of 1-star)
+            min1 = 1.0
+            ## max possible score: Radiohead "OK Computer" 
+            max1 = 5.662521
+            min2 = -1.0
+            max2 = -0.125
+
+            scaledScore = (score - min1) / (max1 - min1)
+            ## transform (curves the linear scores to inflate higher scores and reduce lower)
+            transformedScore = -1 * (8 ^ (-1 * scaledScore))
+            scaledScore = (transformedScore - min2) / (max2 - min2)
+            album_score = (round (scaledScore * 1000)) / 1.0
+
+            if album_score > 1000:
+	        album_score = 1000
+
+            if album_score >= 965:
+                album_rating = 5.0
+            elif album_score >= 890:
                 album_rating = 4.5
-            elif album_score >= 700:
+            elif album_score >= 750:
                 album_rating = 4.0
-            elif album_score >= 640:
+            elif album_score >= 690:
                 album_rating = 3.5
-            elif album_score >= 530:
+            elif album_score >= 625:
                 album_rating = 3.0
-            elif album_score >= 430:
+            elif album_score >= 420:
                 album_rating = 2.5
-            elif album_score > 375:
+            elif album_score > 325:
                 album_rating = 2.0
-            elif album_score > 350:
+            elif album_score > 235:
                 album_rating = 1.5
-            elif album_score > 250:
+            elif album_score >= 100:
                 album_rating = 1.0
-            elif album_score <= 250:
+            elif album_score < 100:
                 album_rating = 0.5
             album_ratings = album_ratings.append([{'spotify_album_id' : album_id, 'artist' : artist, 'album' : album, 'year' : album_data['year'], 'album_rating' : album_rating, 'album_score' : album_score}])
 

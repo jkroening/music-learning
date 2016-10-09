@@ -48,5 +48,8 @@ def main():
     print("\n")
     print("\n".join(sorted_tracks))
 
+    print("\nAdd these local tracks wherever you want in the playlist:\n")
+    print("".join(unfound_tracks))
+
 if __name__ == "__main__":
     main()

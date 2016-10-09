@@ -101,7 +101,7 @@ def main():
             , song
             , i
         )
-        if song > len(db):
+        if song not in db.index:
             k = False ## skip neighbors because song is from unfound_tracks
         else:
             k = True

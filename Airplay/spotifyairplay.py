@@ -2,58 +2,37 @@ import sys
 import json
 import fileinput
 import urllib2
+import re
 import pdb
 sys.path.append( "../Modules")
-from helpers import loadFile
-import spotify_methods as sp
+import spotify_methods as sptfy
 
-def spotifyLookup(track_id):
-    track_string = 'http://ws.spotify.com/lookup/1/.json?uri=spotify:track:%s' % track_id.strip()
-    try:
-        response = urllib2.urlopen(track_string)
-        data = json.loads(response.read())
-        track_data = [data['track']['href'], data['track']['artists'][0]['name'], data['track']['name'], data['track']['popularity'][0:4]]
-        return track_data
-    except:
-        print("Trouble finding track_id:  %s" % track_id.strip())
-        return spotifyLookup(track_id)
 
-def main():
+def main(ultimatechart, explicit = False):
 
     cleans = []
     explicits = []
     local_tracks = []
-    for line in fileinput.input('cleans.txt'):
-        if 'local' in line:
-            local_tracks.append(line)
-            continue
-        track_id = line.strip('http://open.spotify.com/track/')
-        track_data = sp.pullSpotifyTrack(track_id)
-        cleans.append(track_data)
-    for line in fileinput.input('explicits.txt'):
-        if 'local' in line:
-            local_tracks.append(line)
-            continue
-        track_id = line.strip('http://open.spotify.com/track/')
-        track_data = sp.pullSpotifyTrack(track_id)
-        explicits.append(track_data)
-        # track_list.append([str('spotify:track:%s' % track_id).strip(), track_id.strip(), '0.00'])
 
-    # sort explicit list
-    sorted_tracks = sorted(explicits, key=lambda x: float(x['popularity']), reverse=True)
-    # print sorted_tracks
-    # for item in sorted_tracks:
-    #     print item[1] + " - " + item[2], item[3]
-    # for item in sorted_tracks:
-    #     print item[0]
+    cleans, local_tracks = sptfy.pullSpotifyTracks('../input/cleans.txt')
+    explicits, local_tracks = sptfy.pullSpotifyTracks(
+          '../input/explicits.txt'
+        , tracks = explicits
+        , local_tracks = local_tracks
+    )
 
-    # now replace explicits with cleans
-    for e in explicits: # replace explicit track href by the clean version's href
-        for c in cleans:
-            if e['artist'] in c['artist'] and e['title'][:3] in c['title'][:3]: # compare artist name and first 4 characters of track name
-                e['spotify_id'] = c['spotify_id']
-    # sorted_tracks = sorted(explicits, key=lambda x: float(x[3]), reverse=True)
-    # print sorted_tracks
+    if explicit:
+        # sort explicit list
+        sorted_tracks = sorted(explicits, key=lambda x: float(x['popularity']), reverse=True)
+    else:
+        # sort explicit list
+        sorted_tracks = sorted(explicits, key=lambda x: float(x['popularity']), reverse=True)
+        # now replace explicits with cleans
+        for e in explicits: # replace explicit track href by the clean version's href
+            for c in cleans:
+                if e['artist'] in c['artist'] and e['title'][:3] in c['title'][:3]: # compare artist name and first 4 characters of track name
+                    e['spotify_id'] = c['spotify_id']
+
     print "\n"
     for item in sorted_tracks:
         print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
@@ -64,6 +43,31 @@ def main():
         print item
     print "\n"
 
+    if ultimatechart is not None:
+        print "Look in to keeping the following songs in Airplay this week...\n"
+        for item in sorted_tracks:
+            if item['popularity'] < 75:
+                artist = item['artist']
+                title = item['title']
+                artist = re.sub(r'([^\s\w]|_)+', '', artist)
+                title = re.sub(r'([^\s\w]|_)+', '', title)
+                artist_matches = re.findall(r"(?=("+'|'.join(artist.split())+r"))", ultimatechart)
+                title_matches = re.findall(r"(?=("+'|'.join(title.split())+r"))", ultimatechart)
+                if len(artist_matches) and len(title_matches):
+                    print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
+    else:
+        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
+
 
 if __name__ == "__main__":
-    main()
+    explicit = False
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'r') as f:
+            ultimatechart = f.read()
+        if len(sys.argv) == 3 and sys.argv[2] == 'explicit':
+            explicit = True
+    else:
+        ultimatechart = None
+        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
+
+    main(ultimatechart, explicit)

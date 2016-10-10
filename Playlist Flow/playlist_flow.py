@@ -20,10 +20,11 @@ import tsp_solver.greedy as tspg
 
 def main():
 
-    if len(sys.argv) > 4 and sys.argv[4] == "terms":
-        terms = True
-    else:
-        terms = False
+    terms = True
+    # if len(sys.argv) > 4 and sys.argv[4] == "terms":
+    #     terms = True
+    # else:
+    #     terms = False
 
     ## get subset of db based on input.txt
     db, unfound_tracks = hlpr.processInput(terms)

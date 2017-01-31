@@ -44,17 +44,29 @@ def main(ultimatechart, explicit = False):
     print "\n"
 
     if ultimatechart is not None:
-        print "Look in to keeping the following songs in Airplay this week...\n"
+        nums = ('01', '02', '03', '04', '05', '06', '07', '08', '09') + tuple(str(x) for x in range(10, 101))
+        uc = [item for item in ultimatechart if item.startswith(nums)]
+        print "Look into keeping the following songs in Airplay this week...\n"
         for item in sorted_tracks:
             if item['popularity'] < 75:
                 artist = item['artist']
                 title = item['title']
-                artist = re.sub(r'([^\s\w]|_)+', '', artist)
-                title = re.sub(r'([^\s\w]|_)+', '', title)
-                artist_matches = re.findall(r"(?=("+'|'.join(artist.split())+r"))", ultimatechart)
-                title_matches = re.findall(r"(?=("+'|'.join(title.split())+r"))", ultimatechart)
-                if len(artist_matches) and len(title_matches):
-                    print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
+                artist = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', artist).lower())
+                title = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', title).lower())
+                for u in uc:
+                    x = re.sub(r'([^\s\w]|_)+', '', re.sub("&", "and", u)).lower()
+                    if artist + " " in x:
+                        artist_match = True
+                    else:
+                        artist_match = False
+                    if title + " by" in x:
+                        title_match = True
+                    else:
+                        title_match = False
+                    xs = [i for i in x.split(" ")]
+                    if title_match or (artist_match and any([True for t in title.split(" ") if t in xs])):
+                        print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
+                        break
     else:
         print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
 
@@ -63,7 +75,7 @@ if __name__ == "__main__":
     explicit = False
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'r') as f:
-            ultimatechart = f.read()
+            ultimatechart = f.readlines()
         if len(sys.argv) == 3 and sys.argv[2] == 'explicit':
             explicit = True
     else:

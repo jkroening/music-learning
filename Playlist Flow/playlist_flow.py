@@ -6,6 +6,7 @@
 ######################
 
 import sys
+import os
 import pdb
 from subprocess import call
 import scipy.spatial.distance as sc
@@ -20,24 +21,20 @@ import tsp_solver.greedy as tspg
 
 def main():
 
-    terms = True
-    # if len(sys.argv) > 4 and sys.argv[4] == "terms":
-    #     terms = True
-    # else:
-    #     terms = False
+    if len(sys.argv) > 1 and sys.argv[1] == "genres":
+        genres = True
+    else:
+        genres = False
 
     ## get subset of db based on input.txt
-    db, unfound_tracks = hlpr.processInput(terms)
+    db, unfound_tracks = hlpr.processInput(genres = genres)
 
-    cols_to_remove = ["spotify_id", "spotify_album_id", "echonest_id", "title",
-                      "album", "artist", "echonest_artist_id",
-                      "spotify_artist_id", "duration", "time_signature",
-                      "loudness"]
-    ## "_freqwt" is overkill for the sake of explicitness
-    ## as "_freq" is in "_freqwt"
-    substr_cols_to_remove = ["_freqwt", "_freq"]
+    cols = ['tempo', 'mode', 'acousticness', 'danceability', 'energy',
+            'instrumentalness', 'liveness', 'speechiness', 'valence']
+    if genres:
+        cols = cols + GENRE_AGGREGATES
 
-    X = hlpr.dataFrameToMatrix(db, cols_to_remove, substr_cols_to_remove)
+    X = hlpr.dataFrameToMatrix(db, cols_to_keep = cols)
     # X = X.fillna(0)
     X = dam.minMaxScaleData(X)
     # X2 = dam.transformPCA(X, 2)
@@ -81,7 +78,7 @@ def main():
         end_artist = raw_input('Enter artist name of song to end with: ')
         end_title = raw_input('Enter title of song to end with: ')
 
-        df = db_subset
+        df = db
         start = np.where((df.artist.str.lower() == start_artist.lower()) &
                          (df.title.str.lower() == start_title.lower()))[0][0]
         end = np.where((df.artist.str.lower() == end_artist.lower()) &
@@ -100,12 +97,21 @@ def main():
 
         tsp = tspg.solve_tsp(DD)
 
-        for i in tsp:
-            if i != len(DD) - 1:
-                print "{} - {}".format(db.iloc[i, ].artist,
-                                       db.iloc[i, ].title)
-            else:
-                print "--------------------------------"
+        with open(os.path.join("../output", "walk.txt"), "w") as f:
+            mid = np.where(np.array(tsp) == (len(DD) - 1))[0][0]
+            if db.iloc[tsp[mid + 1], ].title.lower() == start_title:
+                walk = np.concatenate([tsp[(mid + 1):len(tsp)], tsp[0:mid]])
+            elif db.iloc[tsp[mid - 1], ].title.lower() == start_title:
+                walk = np.concatenate([tsp[0:(mid)][::-1], tsp[(mid + 1):len(tsp)][::-1]])
+            for w in walk:
+                if w == tsp[0]:
+                    print "----------------------------------------"
+                print "{} - {}".format(db.iloc[w, ].artist,
+                                           db.iloc[w, ].title)
+            print("\n")
+            for w in walk:
+                print "spotify:track:{}".format(db.iloc[w, ].spotify_id)
+                f.write("spotify:track:%s\n" % w)
 
     if method == "start":
         strategy = raw_input("Join songs by 'link' or by 'center'? ")
@@ -122,6 +128,10 @@ def main():
                     db.artist.values[db.spotify_id.values == i][0],
                     db.title.values[db.spotify_id.values == i][0]
                 )
+            print("\n")
+            for i in ids:
+                print "spotify:track:{}".format(i)
+
         ## link means songs are strung together finding the next closest song to
         ## the previously added node
         elif strategy == "link":
@@ -136,6 +146,9 @@ def main():
                         db.spotify_id.values == sptfy.stripSpotifyURI(w)
                     ][0]
                 )
+            print("\n")
+            for w in walk:
+                print w
 
         # cluster_groups1 = hlpr.separateMatrixClusters(X2, clusters1)
         # cluster_groups2 = hlpr.separateDataFrameClusters(db_subset, clusters2)

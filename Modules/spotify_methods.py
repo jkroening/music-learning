@@ -1,74 +1,103 @@
-from helpers import callAPI
+# import sys
+import os
+# sys.path.append("../Modules")
 from unidecode import unidecode
-from flask import Flask, redirect, url_for, session, request
+from flask import Flask, redirect, url_for, session, request, g, render_template
 from flask_oauthlib.client import OAuth, OAuthException
+import spotipy
+from spotipy import util, oauth2
+import json
 import urllib2
+import urllib
+import base64
+import fileinput
+import requests
+import re
+import csv
+import pdb
+import module_helpers as mhlpr
 
-def authSpotify(config):
-    SPOTIFY_APP_ID = config['SPOTIFY_APP_ID']
-    SPOTIFY_APP_SECRET = config['SPOTIFY_APP_SECRET']
 
-    app = Flask(__name__)
-    app.debug = True
-    app.secret_key = 'development'
-    oauth = OAuth(app)
+with open("../config/config.csv", "U") as f:
+    reader = csv.reader(f)
+    config = {}
+    for row in reader:
+        config[row[0]] = row[1]
 
-    spotify = oauth.remote_app(
-        'spotify',
-        consumer_key = SPOTIFY_APP_ID,
-        consumer_secret = SPOTIFY_APP_SECRET,
-        # Change the scope to match whatever it us you need
-        # list of scopes can be found in the url below
-        # https://developer.spotify.com/web-api/using-scopes/
-        request_token_params = {'scope': 'playlist-read-private'},
-        base_url = 'https://accounts.spotify.com',
-        request_token_url = None,
-        access_token_url = '/api/token',
-        authorize_url = 'https://accounts.spotify.com/authorize'
+SPOTIPY_USERNAME = config['username']
+SPOTIPY_CLIENT_ID = config['SPOTIFY_CLIENT_ID']
+SPOTIPY_CLIENT_SECRET = config['SPOTIFY_CLIENT_SECRET']
+SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
+SPOTIPY_SCOPE = 'user-library-read'
+
+# os.environ['SPOTIPY_USERNAME'] = config['username']
+# os.environ['SPOTIPY_CLIENT_ID'] = SPOTIPY_CLIENT_ID
+# os.environ['SPOTIPY_CLIENT_SECRET'] = SPOTIPY_CLIENT_SECRET
+# os.environ['SPOTIPY_REDIRECT_URI'] = SPOTIPY_REDIRECT_URI
+# os.environ['SPOTIPY_SCOPE'] = 'user-library-read'
+
+def authSpotipy():
+
+    auth = oauth2.SpotifyClientCredentials(
+        client_id = SPOTIPY_CLIENT_ID,
+        client_secret = SPOTIPY_CLIENT_SECRET
     )
 
-    @app.route('/')
-    def index():
-        return redirect(url_for('login'))
+    token = auth.get_access_token()
 
-    @app.route('/login')
-    def login():
-        callback = url_for(
-            'spotify_authorized',
-            next = request.args.get('next') or request.referrer or None,
-            _external = True
-        )
-        return spotify.authorize(callback = callback)
+    return token
 
-    @app.route('/login/authorized')
-    def spotify_authorized():
-        resp = spotify.authorized_response()
-        if resp is None:
-            return 'Access denied: reason={0} error={1}'.format(
-                request.args['error_reason'],
-                request.args['error_description']
+    # token = util.prompt_for_user_token(
+    #     username = os.environ['SPOTIPY_USERNAME'],
+    #     scope = os.environ['SPOTIPY_SCOPE']
+    # )
+
+    # token = util.prompt_for_user_token(
+    #     username = os.environ['SPOTIPY_USERNAME'],
+    #     client_id = os.environ['SPOTIPY_CLIENT_ID'],
+    #     client_secret = os.environ['SPOTIPY_CLIENT_SECRET'],
+    #     redirect_uri = os.environ['SPOTIPY_REDIRECT_URI']
+    # )
+
+    # sp = spotipy.Spotify(auth = token)
+
+    # return sp
+
+def getSpotifyCred(username, config):
+    SPOTIPY_CLIENT_ID = config['SPOTIFY_APP_ID']
+    SPOTIPY_CLIENT_SECRET = config['SPOTIFY_APP_SECRET']
+    SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
+    scope = 'user-library-read'
+    token = util.prompt_for_user_token(username, scope, SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+    print token
+    if token:
+        sp = spotipy.Spotify(auth = token)
+        return sp
+    else:
+        print "Can't get token for", username
+
+def retrySpotipy(func):
+    # token = util.prompt_for_user_token(
+    #     username = os.environ['SPOTIPY_USERNAME'],
+    #     scope = os.environ['SPOTIPY_SCOPE']
+    # )
+    def retry(*args, **kwargs):
+        try:
+            auth = oauth2.SpotifyClientCredentials(
+                client_id = SPOTIPY_CLIENT_ID,
+                client_secret = SPOTIPY_CLIENT_SECRET
             )
-        if isinstance(resp, OAuthException):
-            return 'Access denied: {0}'.format(resp.message)
-
-        session['oauth_token'] = (resp['access_token'], '')
-        me = spotify.get('/me')
-        return 'Logged in as id={0} name={1} redirect={2}'.format(
-            me.data['id'],
-            me.data['name'],
-            request.args.get('next')
-        )
-
-    @spotify.tokengetter
-    def get_spotify_oauth_token():
-        return session.get('oauth_token')
-
-    return app
+            token = auth.get_access_token()
+            kwargs['token'] = token
+            return func(*args, **kwargs)
+        except Exception as e:
+            print e
+    return retry
 
 def getSpotifyTrackIDs(text):
     if "spotify:track:" in text:
         track_id = stripSpotifyURI(text)
-        spotify_uri = track
+        spotify_uri = text
     else:
         track_id = stripSpotifyLink(text)
         spotify_uri = "spotify:track:%s" % track_id
@@ -77,7 +106,7 @@ def getSpotifyTrackIDs(text):
 def getSpotifyArtistIDs(text):
     if "spotify:artist:" in text:
         artist_id = stripSpotifyURI(text)
-        spotify_uri = track
+        spotify_uri = text
     else:
         artist_id = stripSpotifyLink(text)
         spotify_uri = "spotify:artist:%s" % artist_id
@@ -86,26 +115,125 @@ def getSpotifyArtistIDs(text):
 def getSpotifyAlbumIDs(text):
     if "spotify:album:" in text:
         album_id = stripSpotifyURI(text)
-        spotify_uri = track
+        spotify_uri = text
     else:
         album_id = stripSpotifyLink(text)
         spotify_uri = "spotify:album:%s" % album_id
     return album_id, spotify_uri
 
+@retrySpotipy
+def getAudioFeatures(tracks, token, silent = False):
+    sptpy = spotipy.Spotify(auth = token)
+    out = []
+
+    if isinstance(tracks, str) and not re.search('local', tracks[0]):
+        data = sptpy.audio_features([tracks])
+        out = parseAudioFeatures(data[0], tracks[0], silent)
+    elif len(tracks) > 50:
+        chunks = mhlpr.chunker(tracks, 50)
+        for chunk in chunks:
+            ## don't try local tracks
+            data = sptpy.audio_features(
+                tracks = ["" if re.search('local', x) else x for x in chunk]
+            )
+            for d, c in zip(data, chunk):
+                out.append(parseAudioFeatures(d, c, silent))
+    else:
+        ## don't try local tracks
+        data = sptpy.audio_features(
+            tracks = ["" if re.search('local', x) else x for x in tracks]
+        )
+        for d, t in zip(data, tracks):
+            out.append(parseAudioFeatures(d, t, silent))
+    return out
+
+def getArtistGenres(artist_id, token):
+    sptpy = spotipy.Spotify(auth = token)
+    return sptpy.artist(artist_id)['genres']
+
+@retrySpotipy
+def getArtistsGenres(artists, token):
+    sptpy = spotipy.Spotify(auth = token)
+    out = []
+
+    if isinstance(artists, str):
+        artists = [artists]
+    elif len(artists) > 50:
+        chunks = mhlpr.chunker(artists, 50)
+        for chunk in chunks:
+            ## don't try local tracks
+            data = sptpy.artist(
+                artists = ["" if re.search('local', x) else x for x in chunk]
+            )
+            for d, c in zip(data, chunk):
+                out.append(parseAudioFeatures(d, c))
+    else:
+        ## don't try local tracks
+        data = sptpy.audio_features(
+            tracks = ["" if re.search('local', x) else x for x in tracks]
+        )
+        for d, t in zip(data, tracks):
+            out.append(parseAudioFeatures(d, t))
+
+    return out
+
+def parseGenres(artist, uri):
+    ## if response is a success
+    if artist is not None:
+        1 == 1
+
+def parseAudioFeatures(song, uri, silent = False):
+    ## if response is a success
+    if song is not None:
+        track = pullSpotifyTrack(stripSpotifyURI(song['uri']))
+        song['artist'] = track['artist']
+        song['title'] = track['title']
+        song['album'] = track['album']
+        song['spotify_artist_id'] = track['spotify_artist_id']
+        song['spotify_album_id'] = track['spotify_album_id']
+        album = pullSpotifyAlbum(song['spotify_album_id'])
+        song['release_date'] = album['release_date']
+        song['year'] = album['year']
+        song['duration'] = song.pop('duration_ms') / 1000.0
+        ## add spotify uri to song data
+        song['spotify_id'] = stripSpotifyURI(song.pop('uri'))
+        ## pop off unneeded data and flatten dict
+        song.pop('track_href', None)
+        song.pop('analysis_url', None)
+        song.pop('type', None)
+        song.pop('id', None)
+    elif not silent:
+        print "Song audio features not found: {}".format(uri)
+    return song
+
 def pullSpotifyTrack(track_id):
     url = "https://api.spotify.com/v1/tracks/%s" % track_id.strip()
-    data = callAPI(url)
+    data = mhlpr.callAPI(url)
     song = unidecode(data['name'])
     album = unidecode(data['album']['name'])
     artist = unidecode(data['artists'][0]['name'])
     artist_id = stripSpotifyURI(data['artists'][0]['uri'])
     album_id = stripSpotifyURI(data['album']['uri'])
-    track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id, 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity']}
+    track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id.strip(), 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity']}
     return track_data
+
+def pullSpotifyTracks(f, tracks = [], local_tracks = [], album_info = False):
+    for line in fileinput.input(f):
+        if 'local' in line:
+            local_tracks.append(line)
+            continue
+        track_id = line.strip('http://open.spotify.com/track/')
+        track_data = pullSpotifyTrack(track_id)
+        if album_info:
+            album_data = pullSpotifyAlbum(track_data['spotify_album_id'])
+            track_data['release_date'] = album_data['release_date']
+            track_data['year'] = album_data['year']
+        tracks.append(track_data)
+    return tracks, local_tracks
 
 def pullSpotifyArtist(artist_id):
     url = "https://api.spotify.com/v1/artists/%s" % artist_id.strip()
-    data = callAPI(url)
+    data = mhlpr.callAPI(url)
     genres = data['genres']
     name = data['name']
     popularity = data['popularity']
@@ -114,7 +242,7 @@ def pullSpotifyArtist(artist_id):
 
 def pullSpotifyAlbum(album_id):
     url = "https://api.spotify.com/v1/albums/%s" % album_id.strip()
-    data = callAPI(url)
+    data = mhlpr.callAPI(url)
     album_name = unidecode(data['name'])
     artist = unidecode(data['artists'][0]['name'])
     artist_id = stripSpotifyURI(data['artists'][0]['uri'])
@@ -123,13 +251,14 @@ def pullSpotifyAlbum(album_id):
         year = release_date[0:4]
     elif data['release_date_precision'] == 'year':
         year = release_date
-    album_data = {'album_name' : album_name, 'artist' : artist, 'spotify_artist_id' : artist_id, 'release_date' : release_date, 'year' : year}
+    album_data = {'album_name' : album_name, 'artist' : artist, 'spotify_artist_id' : artist_id, 'release_date' : release_date, 'year' : year, 'genres' : data['genres']}
     return album_data
 
-def searchSpotifyTrack(artist, title, album = None):
-    url = "https://api.spotify.com/v1/search"
-    payload = {'q' : [artist, title, album], 'type': "track", 'limit' : 50, 'market' : "US"}
-    data = callAPI(url, payload)
+@retrySpotipy
+def searchSpotifyTrack(artist, title, album = None, first = False, token = None):
+    sptpy = spotipy.Spotify(auth = token)
+    data = sptpy.search(q = "%s %s %s" % (artist, title, album), limit = 50, type = 'track')
+
     tracks = []
     for i in xrange(len(data['tracks']['items'])):
         if album is not None:
@@ -143,7 +272,12 @@ def searchSpotifyTrack(artist, title, album = None):
                 unidecode(data['tracks']['items'][i]['name']).lower() == title.lower():
                 spotify_uri = data['tracks']['items'][i]['uri']
                 tracks.append(str(spotify_uri))
-    return tracks
+    if not len(tracks):
+        return None
+    if first:
+        return tracks[0]
+    else:
+        return tracks
 
 def stripSpotifyLink(http_link):
     if 'local' in http_link:
@@ -153,7 +287,7 @@ def stripSpotifyLink(http_link):
         return spotify_id
 
 def stripSpotifyURI(uri):
-    spotify_id = str(uri).split(":")[-1]
+    spotify_id = str(uri).split(":")[-1].strip()
     return spotify_id
 
 def formatLocalTrack(link):
@@ -163,6 +297,72 @@ def formatLocalTrack(link):
     album = urllib2.unquote(s.split("/")[1])
     return artist, title, album
 
+def writeIDsToURI(ids, location, filename):
+    with open(os.path.join(location, filename), "w") as f:
+        for i in ids:
+            f.write("spotify:track:%s\n" % i)
 
+def getTermStats(term):
+    term_freq = "%s_freq" % term['name'].replace(" ", "_")
+    term_wt = "%s_wt" % term['name'].replace(" ", "_")
+    freq = term['frequency']
+    wt = term['weight']
+    return term_freq, term_wt, freq, wt
 
+def pullArtistTerms(api_key, artist, related_artists = None, related_artist_index = 0, term_min = 0):
+    """
+    Function to get artist terms and their weights and frequencies.
 
+    @param  related_artists:  artists related to artist, if None, then the terms being gathered are for the artist and not a related artist
+    @param  related_artist_index:  the index of the current related artist being evaluated as a terms proxy for the artist
+    @param  term_min:  the minimum number of terms that is permitted.
+                                   for related_artists this is usually set to 3 to safe-guard against gathering terms from a lesser-known related artist
+    """
+
+    url = "http://developer.echonest.com/api/v4/artist/terms"
+
+    spotify_uri = "spotify:artist:%s" % artist['spotify_artist_id']
+    payload = {'api_key' : api_key, 'id' : spotify_uri, 'format' : "json"}
+
+    data = mhlpr.callAPI(url, payload)
+
+    # get terms from json
+    terms = data['response']['terms']
+    if len(terms) > term_min:
+        for term in terms:
+            term_freq, term_wt, freq, wt = getTermStats(term)
+            ## frequency as metric
+            artist[term_freq] = freq
+            ## frequency * weight as metric
+            term_freqwt = "%swt" % term_freq
+            artist[term_freqwt] = freq * wt
+            ## weight as metric
+            artist[term_wt] = wt
+        return artist
+    else:
+        # there are no terms for this artist
+        # so search for related artists and get their terms
+        if related_artists is None:
+            url = "https://api.spotify.com/v1/artists/%s/related-artists" % artist['spotify_artist_id']
+
+            spotify_data = mhlpr.callAPI(url)
+
+            related_artists = spotify_data['artists']
+            related_artist_id = {'spotify_artist_id' : sptfy.stripSpotifyURI(related_artists[0]['uri'])}
+        else:
+            related_artist_id = {'spotify_artist_id' : sptfy.stripSpotifyURI(related_artists[related_artist_index]['uri'])}
+
+        return pullArtistTerms(api_key, related_artist_id, related_artists, int(related_artist_index + 1), 3)
+
+def searchUserPlaylists(sp, user, tracks):
+    playlists = sp.user_playlists(user)
+    for playlist in playlists['items']:
+        if playlist['owner']['id'] == user:
+            results = sp.user_playlist(user, playlist['id'], fields="tracks,next")
+            ts = results['tracks']
+            for t in enumerate(ts['items']):
+                # print str(t[1]['track']['uri'])
+                if str(t[1]['track']['uri']) in tracks:
+                    # print tracks[1]
+                    print "\n" + playlist['name']
+                    print "Track #%s" % (t[0] + 1)

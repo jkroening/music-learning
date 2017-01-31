@@ -6,13 +6,13 @@ import time
 import urllib
 import threading
 import sys
-from helpers import loadFile
+import csv
 import webbrowser
 from unidecode import unidecode
 from spotify_methods import searchSpotifyTrack
 
 # Authentication Steps, paramaters, and responses are defined at https://developer.spotify.com/web-api/authorization-guide/
-# Visit this url to see all the steps, parameters, and expected response. 
+# Visit this url to see all the steps, parameters, and expected response.
 
 artist = sys.argv[1]
 track = sys.argv[2]
@@ -25,7 +25,11 @@ tracks = searchSpotifyTrack(artist, track, album)
 
 app = Flask(__name__)
 
-config = loadFile("../config", "config.csv", True)
+with open("../config/config.csv", "U") as f:
+    reader = csv.reader(f)
+    config = {}
+    for row in reader:
+        config[row[0]] = row[1]
 
 #  Client Keys
 CLIENT_ID = config['SPOTIFY_APP_ID']
@@ -119,7 +123,7 @@ def callback():
                         matched_playlists.append((unidecode(playlist['name']), "Track #{}".format(index)))
                 offset2 = offset2 + 100
         offset1 = offset1 + 50
-    
+
     # Combine profile and playlist data to display
     display_arr = [profile_data] + matched_playlists
     return render_template("index.html",sorted_array=display_arr)

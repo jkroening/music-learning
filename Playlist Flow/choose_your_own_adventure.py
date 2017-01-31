@@ -15,25 +15,19 @@ import helpers as hlpr
 import spotify_methods as sptfy
 import data_methods as dam
 
+GENRE_AGGREGATES = ['ALL.electronic', 'ALL.indie', 'ALL.pop', 'ALL.poprock', 'ALL.rock', 'ALL.urban']
 
 def main():
 
-    terms = True
-    # if len(sys.argv) > 4 and sys.argv[4] == "terms":
-    #     terms = True
-    # else:
-    #     terms = False
+    genres = True
 
     ## get subset of db based on input.txt
-    db, unfound_tracks = hlpr.processInput(terms)
+    db, unfound_tracks = hlpr.processInput(genres = genres)
 
-    cols_to_remove = ["spotify_id", "spotify_album_id", "echonest_id", "title",
-                      "album", "artist", "echonest_artist_id",
-                      "spotify_artist_id", "duration", "time_signature",
-                      "loudness"]
-    ## "_freqwt" is overkill for the sake of explicitness
-    ## as "_freq" is in "_freqwt"
-    substr_cols_to_remove = ["_freqwt", "_freq"]
+    cols = ['tempo', 'mode', 'acousticness', 'danceability', 'energy',
+            'instrumentalness', 'liveness', 'speechiness', 'valence']
+    if genres:
+        cols = cols + GENRE_AGGREGATES
 
     song = 0
     i = 1
@@ -76,8 +70,7 @@ def main():
             neighbors = dam.getSimilarPoints(
                 hlpr.dataFrameToMatrix(
                       db
-                    , cols_to_remove
-                    , substr_cols_to_remove
+                    , cols_to_keep = cols
                     , fillNA = True
                     , centerScale = True
                 ).copy()

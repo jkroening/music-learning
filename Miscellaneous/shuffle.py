@@ -4,15 +4,16 @@
 
 import sys
 import random
-import fileinput
+sys.path.append( "../Modules")
+import helpers as hlpr
+
 
 def main():
-    track_list = []
-    for line in fileinput.input('tracks.txt'):
-        track_list.append(line.strip())
+
+    track_list = hlpr.loadFile("../input", "input.txt")
     random.shuffle(track_list)
-    for item in track_list:
-        print item
+    hlpr.writeTextFile(track_list, "../output", "output.txt")
+
 
 if __name__ == "__main__":
     main()

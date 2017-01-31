@@ -3,7 +3,7 @@
 ## and turn it into a numbered list
 ######################
 
-with open("input.txt", "r") as f:
+with open("../input/input.txt", "r") as f:
     outlines = []
     inlines = f.readlines()
     outlines.append('<ol>' + '\n')
@@ -16,5 +16,5 @@ with open("input.txt", "r") as f:
             outlines.append('\t<li>' + t.title().strip() + '</li>' + '\n')
     outlines.append('</ol>' + '\n')
 
-with open("output.txt", "w") as f:
+with open("../output/output.txt", "w") as f:
     f.writelines(outlines)

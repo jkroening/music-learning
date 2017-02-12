@@ -128,7 +128,7 @@ def getAudioFeatures(tracks, token, silent = False):
 
     if isinstance(tracks, str) and not re.search('local', tracks[0]):
         data = sptpy.audio_features([tracks])
-        out = parseAudioFeatures(data[0], tracks[0], silent)
+        out = parseAudioFeatures(data[0], tracks, silent)
     elif len(tracks) > 50:
         chunks = mhlpr.chunker(tracks, 50)
         for chunk in chunks:

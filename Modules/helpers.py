@@ -1,6 +1,7 @@
 import os
 import time
 import csv
+import re
 import requests
 import shutil
 import itertools
@@ -11,6 +12,7 @@ from unidecode import unidecode
 import data_methods as dam
 import spotify_methods as sptfy
 import db_methods as dbm
+import module_helpers as mhlpr
 
 def loadFile(location, filename, as_dict = False):
     try:
@@ -236,73 +238,134 @@ def processInput(terms = False, genres = False, input_playlist = None):
 
     return db_out, unfound_tracks
 
-def sortGenres(artist_id, genre_db, track_id, token, makePlaylists = False):
+def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
+               token, makePlaylists = False):
+    ## we load the genres inside the function because they can be appended to
+    ## below if a new genre presents itself for classification
+    genre_db = dbm.buildSubgenres()
+    for k, v in genre_db.items():
+        genre_db[k] = mhlpr.flattenDictCustom(v).keys()
+    all_genres = [v for k, v in genre_db.items() for v in genre_db[k]]
     genres = sptfy.getArtistGenres(artist_id, token = token)
+    electronic = genre_db['electronic']
+    indie = genre_db['indie']
+    pop = genre_db['pop']
+    poprock = genre_db['poprock']
+    rock = genre_db['rock']
+    urban = genre_db['urban']
     if len(genres) < 1 and makePlaylists:
-        with open('../output/unknowntracks.txt', 'a') as f:
+        with open('../output/unknowntracks.txt', 'a+') as f:
             f.write('spotify:track:%s\r' % track_id)
-            print "Not found: {}".format(track_id)
+            print "Not found: {} - {}".format(artist_name, track_name)
     else:
-        pdb.set_trace()
+        e, i, p, o, u, r = [0] * 6
         for g in genres:
-            pdb.set_trace()
+            g = re.sub(r"[^a-zA-Z0-9]", '_', g)
+            if g in electronic:
+                e = e + 1
+            if g in indie:
+                i = i + 1
             if g in pop:
                 p = p + 1
+            if g in poprock:
+                o = o + 1
             if g in urban:
                 u = u + 1
             if g in rock:
                 r = r + 1
-        # if there are ties, take the first genre listed of the ties
-        if p == u and p > r:
-            if genres[0] in pop:
-                with open('../output/poptracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif genres[0] in urban:
-                with open('../output/urbantracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-        elif p == r and p > u:
-            if genres[0] in pop:
-                with open('../output/poptracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif genres[0] in rock:
-                with open('../output/rocktracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-        elif u == r and u > p:
-            if genres[0] in urban:
-                with open('../output/urbantracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif genres[0] in rock:
-                with open('../output/rocktracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-        elif p == u and u == r:
-            if genres[0] in pop:
-                with open('../output/poptracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif genres[0] in urban:
-                with open('../output/urbantracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif genres[0] in rock:
-                with open('../output/rocktracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-        else: # there are no ties, so take the most frequent genre
-            bigname = biggest(p, u, r)
-            if bigname == 'p':
-                with open('../output/poptracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif bigname == 'u':
-                with open('../output/urbantracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-            elif bigname == 'r':
-                with open('../output/rocktracks.txt', 'a') as f:
-                    f.write('spotify:track:%s\r' % track_id)
-
-def biggest(p, u, r):
-    bigname = 'p'
-    big = p
-    if u > big:
-        bigname = 'u'
-        big = u
-    if r > big:
-        bigname = 'r'
-        big = r
-    return bigname
+            if g not in all_genres:
+                user_input = [None]
+                while not os.path.isfile("../Databases/genres/{}.txt".format(user_input[0])):
+                    user_input = raw_input(
+                        '\nIn which genre group(s) does {} belong? [{}] (separate by space)\
+                        \nelectronic \
+                        \nindie \
+                        \npop \
+                        \npoprock \
+                        \nrock \
+                        \nurban\n\n'.format(g, artist_name)
+                    ).split()
+                for ui in user_input:
+                    with open("../Databases/genres/{}.txt".format(ui), "a") as f:
+                        f.write(g + "\n")
+                    all_genres.append(g)
+                    if ui == "electronic":
+                        e = e + 1
+                    if ui == "indie":
+                        i = i + 1
+                    if ui == "pop":
+                        p = p + 1
+                    if ui == "poprock":
+                        o = o + 1
+                    if ui == "urban":
+                        u = u + 1
+                    if ui == "rock":
+                        r = r + 1
+        scores = {"electronic" : e, "indie" : i, "pop" : p,
+                  "poprock" : o, "urban" : u, "rock" : r}
+        if sum(scores.values()) == 0:
+            maxes = []
+        else:
+            maxes = [k for k, v in scores.items() if v == max(scores.values())]
+        if secondary_artist is not None and len(maxes) > 0 and 'pop' not in maxes:
+            ## use featuring artist genres too
+            genres = genres + sptfy.getArtistGenres(secondary_artist, token = token)
+            e, i, p, o, u, r = [0] * 6
+            for g in genres:
+                g = re.sub(r"[^a-zA-Z0-9]", '_', g)
+                if g in electronic:
+                    e = e + 1
+                if g in indie:
+                    i = i + 1
+                if g in pop:
+                    p = p + 1
+                if g in poprock:
+                    o = o + 1
+                if g in urban:
+                    u = u + 1
+                if g in rock:
+                    r = r + 1
+                if g not in all_genres:
+                    user_input = [None]
+                    while not os.path.isfile("../Databases/genres/{}.txt".format(user_input[0])):
+                        user_input = raw_input(
+                            '\nIn which genre group(s) does {} belong? [{}] (separate by space)\
+                            \nelectronic \
+                            \nindie \
+                            \npop \
+                            \npoprock \
+                            \nrock \
+                            \nurban\n\n'.format(g, artist_name)
+                        ).split()
+                    for ui in user_input:
+                        with open("../Databases/genres/{}.txt".format(ui), "a") as f:
+                            f.write(g + "\n")
+                        all_genres.append(g)
+                        if ui == "electronic":
+                            e = e + 1
+                        if ui == "indie":
+                            i = i + 1
+                        if ui == "pop":
+                            p = p + 1
+                        if ui == "poprock":
+                            o = o + 1
+                        if ui == "urban":
+                            u = u + 1
+                        if ui == "rock":
+                            r = r + 1
+            scores = {"electronic" : e, "indie" : i, "pop" : p,
+                      "poprock" : o, "urban" : u, "rock" : r}
+            maxes = [k for k, v in scores.items() if v == max(scores.values())]
+        if artist_name in ["Radiohead"]:
+            pdb.set_trace()
+        if len(maxes) == 1 or ('pop' in maxes and 'electronic' in maxes):
+            with open(os.path.join("../output/", maxes[0] + "tracks.txt"), "a+") as f:
+                f.write('spotify:track:%s\r' % track_id)
+        else:
+            # if there are ties, this takes the first genre listed of the ties
+            for m in maxes:
+                g = re.sub(r"[^a-zA-Z0-9]", '_', genres[0])
+                if g in genre_db[m]:
+                    with open(os.path.join("../output/", m + "tracks.txt"), "a+") as f:
+                        f.write('spotify:track:%s\r' % track_id)
+                    break

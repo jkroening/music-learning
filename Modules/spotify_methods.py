@@ -214,7 +214,11 @@ def pullSpotifyTrack(track_id):
     artist = unidecode(data['artists'][0]['name'])
     artist_id = stripSpotifyURI(data['artists'][0]['uri'])
     album_id = stripSpotifyURI(data['album']['uri'])
-    track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id.strip(), 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity']}
+    if len(data['artists']) > 1:
+        secondary_artist = stripSpotifyURI(data['artists'][1]['uri'])
+    else:
+        secondary_artist = None
+    track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id.strip(), 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity'], 'secondary_artist' : secondary_artist}
     return track_data
 
 def pullSpotifyTracks(f, tracks = [], local_tracks = [], album_info = False):

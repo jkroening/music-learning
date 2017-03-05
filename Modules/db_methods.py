@@ -87,7 +87,7 @@ def buildArtistDataFrame(song_db, artist_db):
                             \npop \
                             \npoprock \
                             \nrock \
-                            \nurban\n\n'.format(g, artist['artist'])
+                            \nurban\n\n'.format(g, artist['artist'].encode('utf-8').strip())
                         ).split()
                     for ui in user_input:
                         with open("../Databases/genres/{}.txt".format(ui), "a") as f:

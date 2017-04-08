@@ -10,7 +10,7 @@ Inside:
 - Album Rating
   - rate_albums.py -- rates albums using a custom formula taking individual song ratings as input
 - Cluster Playlists
-  - cluster.py -- returns multiple playlists from one, clustering songs in the output by Echonest term similarity
+  - cluster.py -- returns multiple playlists from one, clustering songs in the output by term similarity
   - sort_genre.py -- returns multiple playlists from one, clustering songs in the output by Spotify genre similarity
 - DRM Removal
   - drmstrip_video.py -- DRM removal for m4v files

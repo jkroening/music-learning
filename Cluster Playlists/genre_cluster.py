@@ -28,9 +28,12 @@ def main():
     for f in glob.glob("../output/*.txt"):
         os.remove(f)
 
+    config = loadFile("../config", "config.csv", True)
+    token = sptfy.authSpotipy()
+
     for line in fileinput.input(in_file):
         track_id = line.split("/")[-1].strip()
-        track_info = sptfy.pullSpotifyTrack(track_id)
+        track_info = sptfy.pullSpotifyTrack(track_id, token = token)
         artist_id = track_info['spotify_artist_id']
         artist_name = track_info['artist']
         track_name = track_info['title']

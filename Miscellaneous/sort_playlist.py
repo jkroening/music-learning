@@ -18,34 +18,60 @@ def main():
 
     ## which feature to sort on
     sort_col1 = raw_input(
-        "\nEnter one of the following features to sort on:\ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode\nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness\nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
+        "\nEnter one of the following features to sort on: \
+        \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
+        \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
+        \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
     )
     ## ascending or descending (1 = ascending, 0 = descending)
-    ascending1 = int(raw_input("\nChoose sort order for this feature:\n(0) descending\n(1) ascending\n\n"))
+    ascending1 = int(raw_input(
+        "\nChoose sort order for this feature: \
+        \n(0) descending\n(1) ascending\n\n"
+    ))
     while ascending1 != 0 and ascending1 != 1:
-        ascending1 = int(raw_input("\nEnter either 0 or 1:\n(0) descending\n(1) ascending\n\n"))
+        ascending1 = int(raw_input(
+            "\nEnter either 0 or 1: \
+            \n(0) descending\n(1) ascending\n\n"
+        ))
 
-    if sort_col1 in ["tempo", "time_signature", "key", "mode", "popularity", "release_date", "year"]:
+    if sort_col1 in ["tempo", "time_signature", "key", "mode", "popularity",
+                     "release_date", "year"]:
         sort_col2 = raw_input(
-            "\nIn case of ties what second feature would you like to sort on:\ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode\nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness\nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
+            "\nIn case of ties what second feature would you like to sort on: \
+            \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
+            \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
+            \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
         )
         ## ascending or descending (1 = ascending, 0 = descending)
-        ascending2 = int(raw_input("\nChoose sort order for this feature:\n(0) descending\n(1) ascending\n\n"))
+        ascending2 = int(raw_input(
+            "\nChoose sort order for this feature: \
+            \n(0) descending\n(1) ascending\n\n"
+        ))
         while ascending2 != 0 and ascending2 != 1:
-            ascending2 = int(raw_input("\nEnter either 0 or 1:\n(0) descending\n(1) ascending\n\n"))
+            ascending2 = int(raw_input(
+            "\nEnter either 0 or 1: \
+            \n(0) descending\n(1) ascending\n\n"
+        ))
     else:
         sort_col2 = None
         ascending2 = 1
     print("")
 
+    config = loadFile("../config", "config.csv", True)
+    token = sptfy.authSpotipy()
+
     if "popularity" in [sort_col1, sort_col2]:
-        db, unfound_tracks = sptfy.pullSpotifyTracks('../input/input.txt')
+        db, unfound_tracks = sptfy.pullSpotifyTracks('../input',
+                                                     'input.txt',
+                                                     token = token)
         df = pd.DataFrame.from_dict(db)
-        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
+        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt",
+                                               token = token)
         db = db.merge(df[["spotify_id", "popularity"]], on = "spotify_id")
     else:
         ## get subset of db based on input.txt
-        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
+        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt",
+                                               token = token)
 
     if sort_col1 not in db.columns:
         print("\nSort column '{}' not in database!").format(sort_col1)
@@ -57,7 +83,8 @@ def main():
     if sort_col2 is None:
         sorted_db = db.sort_values(by = sort_col1, ascending = ascending1)
     else:
-        sorted_db = db.sort_values(by = [sort_col1, sort_col2], ascending = [ascending1, ascending2])
+        sorted_db = db.sort_values(by = [sort_col1, sort_col2],
+                                   ascending = [ascending1, ascending2])
     sorted_tracks = [
         "spotify:track:{}".format(x[1]['spotify_id']).rstrip() \
         if len(x[1]['spotify_id']) < 36 else x[1]['spotify_id'].rstrip() \

@@ -1,3 +1,6 @@
+## THIS MODULE IS DEPRECATED
+## since Echo Nest was purchased by Spotify
+
 # import sys
 # sys.path.append( "../Modules")
 import spotify_methods as sptfy

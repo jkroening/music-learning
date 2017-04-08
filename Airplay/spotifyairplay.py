@@ -14,11 +14,15 @@ def main(ultimatechart, explicit = False):
     explicits = []
     local_tracks = []
 
-    cleans, local_tracks = sptfy.pullSpotifyTracks('../input/cleans.txt')
+    config = loadFile("../config", "config.csv", True)
+    token = sptfy.authSpotipy()
+
+    cleans, local_tracks = sptfy.pullSpotifyTracks('../input', 'cleans.txt', token = token)
     explicits, local_tracks = sptfy.pullSpotifyTracks(
-          '../input/explicits.txt'
+          '../input', 'explicits.txt'
         , tracks = explicits
         , local_tracks = local_tracks
+        , token = token
     )
 
     if explicit:

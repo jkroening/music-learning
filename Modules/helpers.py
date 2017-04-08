@@ -224,7 +224,8 @@ def processInput(terms = False, genres = False, input_playlist = None):
         ## build dict of artists with genres
         artist_db = dbm.buildArtistDataFrame(
             db_subset,
-            artist_db
+            artist_db,
+            token = token
         )
         dbm.saveDataFrame(artist_db, "../Databases", "artist_db.csv")
 

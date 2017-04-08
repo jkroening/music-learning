@@ -3,7 +3,6 @@ import re
 import pdb
 import itertools
 import pandas as pd
-import echonest_methods as ec
 import spotify_methods as sptfy
 import module_helpers as mhlpr
 
@@ -56,7 +55,7 @@ def buildArtistDict(tracks):
         artists[r['artist_id']] = {'artist' : r['artist_name']}
     return artists
 
-def buildArtistDataFrame(song_db, artist_db):
+def buildArtistDataFrame(song_db, artist_db, token = None):
     for i, row in song_db.iterrows():
         ## also check if no subgenres are marked (ie. all are zero) and if so
         ## check again
@@ -70,8 +69,8 @@ def buildArtistDataFrame(song_db, artist_db):
             match_genres = match_subset[match_subset.values != 0].index
             genres_sum = sum(match_subset)
         if genres_sum == 0:
-            artist = sptfy.pullSpotifyArtist(row.spotify_artist_id)
-            album = sptfy.pullSpotifyAlbum(row.spotify_album_id)
+            artist = sptfy.pullSpotifyArtist(row.spotify_artist_id, token = token)
+            album = sptfy.pullSpotifyAlbum(row.spotify_album_id, token = token)
             gs = set(artist['genres'] + album['genres'])
             gs = [re.sub(r"[^a-zA-Z0-9]", '_', x) for x in gs]
             new_genres = set(gs).difference(set(flat_genres))

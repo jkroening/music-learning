@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 sys.path.append( "../Modules")
 from helpers import loadFile
-import spotify_methods as sp
+import spotify_methods as sptfy
 from db_methods import lookupSongBySpotifyID, lookupAlbumBySpotifyID, saveDataFrame
 
 def main():
@@ -27,14 +27,17 @@ def main():
     db = loadFile("../Databases", "song_ratings_db.csv")
     album_ratings = loadFile("../Databases", "album_ratings_db.csv")
 
+    config = loadFile("../config", "config.csv", True)
+    token = sptfy.authSpotipy()
+
     rating = 0
     for ls in [ones, twos, threes, fours, fives]:
         ## playlists are looped in this order such that if a song is in multiple lists it's rating will end up being the highest one
         rating = rating + 1
         for song in ls:
-            track_id, spotify_uri = sp.getSpotifyTrackIDs(song)
+            track_id, spotify_uri = sptfy.getSpotifyTrackIDs(song)
             if not lookupSongBySpotifyID(track_id, db):
-                track = sp.pullSpotifyTrack(track_id)
+                track = sptfy.pullSpotifyTrack(track_id, token = token)
                 db = db.append([{'spotify_id' : track_id, 'artist' : track['artist'], 'album' : track['album'], 'spotify_album_id' : track['spotify_album_id'], 'song' : track['title'], 'rating' : rating}])
 
     db = db.sort(['artist', 'album', 'rating'])
@@ -45,7 +48,7 @@ def main():
         album = album[1]
         if not lookupAlbumBySpotifyID(album, album_ratings):
             album_id = pd.unique(db[db.artist == artist][db.album == album]['spotify_album_id'])[0]
-            album_data = sp.pullSpotifyAlbum(album_id)
+            album_data = sptfy.pullSpotifyAlbum(album_id, token = token)
             ratings = db[db.artist == artist][db.album == album]['rating'].tolist()
             if len(ratings) < 3:
                 ## don't make album ratings for singles
@@ -92,7 +95,7 @@ def main():
 
             ## min possible score: (mean of 1-star)
             min1 = 1.0
-            ## max possible score: Radiohead "OK Computer" 
+            ## max possible score: Radiohead "OK Computer"
             max1 = 5.662521
             min2 = -1.0
             max2 = -0.125

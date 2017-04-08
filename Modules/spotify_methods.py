@@ -16,6 +16,7 @@ import re
 import csv
 import pdb
 import module_helpers as mhlpr
+import helpers as hlpr
 
 
 with open("../config/config.csv", "U") as f:
@@ -128,7 +129,7 @@ def getAudioFeatures(tracks, token, silent = False):
 
     if isinstance(tracks, str) and not re.search('local', tracks[0]):
         data = sptpy.audio_features([tracks])
-        out = parseAudioFeatures(data[0], tracks, silent)
+        out = parseAudioFeatures(data[0], tracks, silent, token = token)
     elif len(tracks) > 50:
         chunks = mhlpr.chunker(tracks, 50)
         for chunk in chunks:
@@ -137,14 +138,14 @@ def getAudioFeatures(tracks, token, silent = False):
                 tracks = ["" if re.search('local', x) else x for x in chunk]
             )
             for d, c in zip(data, chunk):
-                out.append(parseAudioFeatures(d, c, silent))
+                out.append(parseAudioFeatures(d, c, silent, token = token))
     else:
         ## don't try local tracks
         data = sptpy.audio_features(
             tracks = ["" if re.search('local', x) else x for x in tracks]
         )
         for d, t in zip(data, tracks):
-            out.append(parseAudioFeatures(d, t, silent))
+            out.append(parseAudioFeatures(d, t, silent, token = token))
     return out
 
 def getArtistGenres(artist_id, token):
@@ -166,14 +167,14 @@ def getArtistsGenres(artists, token):
                 artists = ["" if re.search('local', x) else x for x in chunk]
             )
             for d, c in zip(data, chunk):
-                out.append(parseAudioFeatures(d, c))
+                out.append(parseAudioFeatures(d, c, token = token))
     else:
         ## don't try local tracks
         data = sptpy.audio_features(
             tracks = ["" if re.search('local', x) else x for x in tracks]
         )
         for d, t in zip(data, tracks):
-            out.append(parseAudioFeatures(d, t))
+            out.append(parseAudioFeatures(d, t, token = token))
 
     return out
 
@@ -182,16 +183,16 @@ def parseGenres(artist, uri):
     if artist is not None:
         1 == 1
 
-def parseAudioFeatures(song, uri, silent = False):
+def parseAudioFeatures(song, uri, silent = False, token = None):
     ## if response is a success
     if song is not None:
-        track = pullSpotifyTrack(stripSpotifyURI(song['uri']))
+        track = pullSpotifyTrack(stripSpotifyURI(song['uri']), token = token)
         song['artist'] = track['artist']
         song['title'] = track['title']
         song['album'] = track['album']
         song['spotify_artist_id'] = track['spotify_artist_id']
         song['spotify_album_id'] = track['spotify_album_id']
-        album = pullSpotifyAlbum(song['spotify_album_id'])
+        album = pullSpotifyAlbum(song['spotify_album_id'], token = token)
         song['release_date'] = album['release_date']
         song['year'] = album['year']
         song['duration'] = song.pop('duration_ms') / 1000.0
@@ -206,9 +207,9 @@ def parseAudioFeatures(song, uri, silent = False):
         print "Song audio features not found: {}".format(uri)
     return song
 
-def pullSpotifyTrack(track_id):
-    url = "https://api.spotify.com/v1/tracks/%s" % track_id.strip()
-    data = mhlpr.callAPI(url)
+def pullSpotifyTrack(track_id, token = None):
+    sptpy = spotipy.Spotify(auth = token)
+    data = sptpy.track(track_id.strip())
     song = unidecode(data['name'])
     album = unidecode(data['album']['name'])
     artist = unidecode(data['artists'][0]['name'])
@@ -221,32 +222,34 @@ def pullSpotifyTrack(track_id):
     track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id.strip(), 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity'], 'secondary_artist' : secondary_artist}
     return track_data
 
-def pullSpotifyTracks(f, tracks = [], local_tracks = [], album_info = False):
-    for line in fileinput.input(f):
-        if 'local' in line:
-            local_tracks.append(line)
+def pullSpotifyTracks(location, filename, tracks = [], local_tracks = [], album_info = False, token = None):
+    ## load tracks in playlist
+    in_tracks = hlpr.loadFile(location, filename)
+    for track in in_tracks:
+        if 'local' in track:
+            local_tracks.append(track)
             continue
-        track_id = line.strip('http://open.spotify.com/track/')
-        track_data = pullSpotifyTrack(track_id)
+        track_id = stripSpotifyLink(track)
+        track_data = pullSpotifyTrack(track_id, token = token)
         if album_info:
-            album_data = pullSpotifyAlbum(track_data['spotify_album_id'])
+            album_data = pullSpotifyAlbum(track_data['spotify_album_id'], token = token)
             track_data['release_date'] = album_data['release_date']
             track_data['year'] = album_data['year']
         tracks.append(track_data)
     return tracks, local_tracks
 
-def pullSpotifyArtist(artist_id):
-    url = "https://api.spotify.com/v1/artists/%s" % artist_id.strip()
-    data = mhlpr.callAPI(url)
+def pullSpotifyArtist(artist_id, token = None):
+    sptpy = spotipy.Spotify(auth = token)
+    data = sptpy.artist(artist_id.strip())
     genres = data['genres']
     name = data['name']
     popularity = data['popularity']
     artist_data = {'artist' : name, 'spotify_artist_id' : artist_id, 'genres' : genres, 'artist_popularity' : popularity}
     return artist_data
 
-def pullSpotifyAlbum(album_id):
-    url = "https://api.spotify.com/v1/albums/%s" % album_id.strip()
-    data = mhlpr.callAPI(url)
+def pullSpotifyAlbum(album_id, token = None):
+    sptpy = spotipy.Spotify(auth = token)
+    data = sptpy.album(album_id.strip())
     album_name = unidecode(data['name'])
     artist = unidecode(data['artists'][0]['name'])
     artist_id = stripSpotifyURI(data['artists'][0]['uri'])
@@ -313,6 +316,7 @@ def getTermStats(term):
     wt = term['weight']
     return term_freq, term_wt, freq, wt
 
+## DEPRECATED -- since Echo Nest was purchased by Spotify
 def pullArtistTerms(api_key, artist, related_artists = None, related_artist_index = 0, term_min = 0):
     """
     Function to get artist terms and their weights and frequencies.

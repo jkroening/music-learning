@@ -24,6 +24,12 @@ if (length(args) > 2)
 ## load data
 d.pre <- read.csv(args[1], stringsAsFactors = FALSE, encoding = "windows-1252",
                   sep = "\t")
+## if empty d.pre
+if (nrow(d.pre) == 0) {
+    d.pre <- data.frame(t(matrix(rep("", 7))), stringsAsFactors = FALSE)
+    colnames(d.pre) <- c("RANK", "X", "ARTIST", "ALBUM", "GENRE", "POWER.INDEX", "TREND")
+}
+
 if (length(args) == 2) {
     d.add <- suppressWarnings(
         read.csv(args[2], stringsAsFactors = FALSE, encoding = "iso-8859-1")
@@ -50,6 +56,8 @@ if (length(args) == 2) {
     if (grepl("new_eps.csv", args[2])) {
         out.name <- "EP_RANKINGS.csv"
         RELEASE.TYPE <- "EP"
+        colnames(d.pre)[4] <- RELEASE.TYPE
+        colnames(d.add)[4] <- RELEASE.TYPE
     } else {
         out.name <- "ALBUM_RANKINGS.csv"
         RELEASE.TYPE = "ALBUM"
@@ -116,34 +124,40 @@ d.sorted$POWER.INDEX <- as.numeric(d.sorted$POWER.INDEX)
 d1 <- d.pre[!is.na(d.pre$POWER.INDEX), ] ## previous index scores
 d2 <- as.numeric(d.sorted$POWER.INDEX) ## all index scores, including new
 
-cuts <- if (length(d2) < 50) 0.25 else 0.2
-cuts <- if (length(d2) > 80) 0.10 else cuts
+if (nrow(d.pre) != 1 && d.pre$POWER.INDEX != "") {
+    cuts <- if (length(d2) < 50) 0.25 else 0.2
+    cuts <- if (length(d2) > 80) 0.10 else cuts
 
-cut1 <- .bincode(d1$POWER.INDEX,
-            quantile(d1$POWER.INDEX, probs = seq(0, 1, cuts)),
-            include.lowest = TRUE)
-cut2 <- .bincode(d1$POWER.INDEX,
-            quantile(d2, probs = seq(0, 1, cuts)),
-            include.lowest = TRUE)
+    cut1 <- .bincode(d1$POWER.INDEX,
+                     quantile(d1$POWER.INDEX, probs = seq(0, 1, cuts)),
+                     include.lowest = TRUE)
+    cut2 <- .bincode(d1$POWER.INDEX,
+                     quantile(d2, probs = seq(0, 1, cuts), na.rm = TRUE),
+                     include.lowest = TRUE)
 
-## compare these two cuts takes albums previous in power ranking and looks at
-## where they land in the decile compares them to where they land using the new
-## decile with the new album entries if an album has a lower value in the cut
-## output on the second than the first, it trends down, and vice-versa.
-diffs <- cut2 - cut1
-d.diffs <- cbind(d.pre, diffs)
+    ## compare these two cuts takes albums previous in power ranking and looks at
+    ## where they land in the decile compares them to where they land using the new
+    ## decile with the new album entries if an album has a lower value in the cut
+    ## output on the second than the first, it trends down, and vice-versa.
+    diffs <- cut2 - cut1
+    d.diffs <- cbind(d.pre, diffs)
 
-for (i in 1:nrow(d.diffs)) {
-    if (diffs[i] == 0)
-        trend <- trend.no
-    if (diffs[i] < 0)
-        trend <- trend.dwn
-    if (diffs[i] > 0)
-        trend <- trend.up
-    matched <- which(d.sorted$ARTIST == d.pre$ARTIST[[i]] &
-                         d.sorted$X == d.pre$X[[i]])
-    if (d.sorted$TREND[[matched]] == "_update_")
-        d.sorted$TREND[[matched]] <- trend
+    for (i in 1:nrow(d.diffs)) {
+        if (is.na(diffs[i]))
+            trend <- TREND.NEW
+        else if (diffs[i] == 0)
+            trend <- trend.no
+        else if (diffs[i] < 0)
+            trend <- trend.dwn
+        else if (diffs[i] > 0)
+            trend <- trend.up
+        matched <- which(d.sorted$ARTIST == d.pre$ARTIST[[i]] &
+                             d.sorted$X == d.pre$X[[i]])
+        if (d.sorted$TREND[[matched]] == "_update_")
+            d.sorted$TREND[[matched]] <- trend
+    }
+} else {
+    d.sorted <- d.sorted[d.sorted$TREND != "_update_" & !is.na(d.sorted$POWER.INDEX), ]
 }
 
 releaseSlug <- function(text) {

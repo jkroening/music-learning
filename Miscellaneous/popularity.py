@@ -7,6 +7,7 @@ import pdb
 import fileinput
 sys.path.append( "../Modules")
 import spotify_methods as sptfy
+from helpers import loadFile
 
 
 def main():
@@ -46,3 +47,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if (grepl("new_eps.csv"))

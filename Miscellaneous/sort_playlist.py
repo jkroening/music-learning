@@ -57,7 +57,7 @@ def main():
         ascending2 = 1
     print("")
 
-    config = loadFile("../config", "config.csv", True)
+    config = hlpr.loadFile("../config", "config.csv", True)
     token = sptfy.authSpotipy()
 
     if "popularity" in [sort_col1, sort_col2]:
@@ -65,13 +65,11 @@ def main():
                                                      'input.txt',
                                                      token = token)
         df = pd.DataFrame.from_dict(db)
-        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt",
-                                               token = token)
+        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
         db = db.merge(df[["spotify_id", "popularity"]], on = "spotify_id")
     else:
         ## get subset of db based on input.txt
-        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt",
-                                               token = token)
+        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
 
     if sort_col1 not in db.columns:
         print("\nSort column '{}' not in database!").format(sort_col1)

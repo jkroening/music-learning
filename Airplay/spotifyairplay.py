@@ -6,6 +6,7 @@ import re
 import pdb
 sys.path.append( "../Modules")
 import spotify_methods as sptfy
+from helpers import loadFile
 
 
 def main(ultimatechart, explicit = False):

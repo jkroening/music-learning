@@ -28,7 +28,7 @@ def main():
     for f in glob.glob("../output/*.txt"):
         os.remove(f)
 
-    config = loadFile("../config", "config.csv", True)
+    config = hlpr.loadFile("../config", "config.csv", True)
     token = sptfy.authSpotipy()
 
     for line in fileinput.input(in_file):

@@ -8,7 +8,7 @@
 
 suppressMessages(library(spotifyr))
 suppressMessages(library(dplyr))
-library(stringi)
+suppressMessages(library(stringi))
 
 args = commandArgs(trailingOnly = TRUE)
 
@@ -49,7 +49,7 @@ if (length(args) == 2) {
           , d.add$RELEASE
           , d.add$GENRE
           , d.add$POWER.INDEX
-          , rep("", nrow(d.add))
+          , if ("TREND" %in% names(d.pre)) rep("", nrow(d.add)) else NULL
         ), stringsAsFactors = FALSE)
       , names(d.pre)
     )
@@ -82,7 +82,8 @@ TREND.NEW <- "<div class='new_entry'>NEW ENTRY</span>"
 ## TODO later
 
 ## add to d.pre (d.new)
-d.pre$TREND <- rep("_update_", nrow(d.pre))
+if ("TREND" %in% names(d.pre))
+    d.pre$TREND <- rep("_update_", nrow(d.pre))
 d.new <- rbind(d.pre, d.add, stringsAsFactors = FALSE)
 
 ## update any previously existing entries
@@ -102,11 +103,13 @@ if (nrow(common)) {
                 d.new[ , RELEASE.TYPE] == common[ , RELEASE.TYPE][[i]] &
                 d.new[ , "X"] == ""
         )
-        if (d.new[update.pre, "POWER.INDEX"] > d.new[update.add, "POWER.INDEX"])
-            d.new[update.pre, "TREND"] <- trend.dwn
-        else if (d.new[update.pre, "POWER.INDEX"] < d.new[update.add, "POWER.INDEX"])
-            d.new[update.pre, "TREND"] <- trend.up
-        else d.new[update.pre, "TREND"] <- trend.no
+        if ("TREND" %in% d.new) {
+            if (d.new[update.pre, "POWER.INDEX"] > d.new[update.add, "POWER.INDEX"])
+                d.new[update.pre, "TREND"] <- trend.dwn
+            else if (d.new[update.pre, "POWER.INDEX"] < d.new[update.add, "POWER.INDEX"])
+                d.new[update.pre, "TREND"] <- trend.up
+            else d.new[update.pre, "TREND"] <- trend.no
+        }
         d.new[update.pre, "POWER.INDEX"] <- d.new[update.add, "POWER.INDEX"]
         d.new[update.pre, "GENRE"] <- d.new[update.add, "GENRE"]
         d.new <- d.new[-update.add, ]
@@ -121,43 +124,45 @@ d.sorted$RANK <- ranks
 d.sorted$POWER.INDEX <- as.numeric(d.sorted$POWER.INDEX)
 
 ## calculate and determine trends
-d1 <- d.pre[!is.na(d.pre$POWER.INDEX), ] ## previous index scores
-d2 <- as.numeric(d.sorted$POWER.INDEX) ## all index scores, including new
+if ("TREND" %in% d.sorted) {
+    d1 <- d.pre[!is.na(d.pre$POWER.INDEX), ] ## previous index scores
+    d2 <- as.numeric(d.sorted$POWER.INDEX) ## all index scores, including new
 
-if (nrow(d.pre) != 1 && d.pre$POWER.INDEX != "") {
-    cuts <- if (length(d2) < 50) 0.25 else 0.2
-    cuts <- if (length(d2) > 80) 0.10 else cuts
+    if (nrow(d.pre) != 1 && d.pre$POWER.INDEX != "") {
+        cuts <- if (length(d2) < 50) 0.25 else 0.2
+        cuts <- if (length(d2) > 80) 0.10 else cuts
 
-    cut1 <- .bincode(d1$POWER.INDEX,
-                     quantile(d1$POWER.INDEX, probs = seq(0, 1, cuts)),
-                     include.lowest = TRUE)
-    cut2 <- .bincode(d1$POWER.INDEX,
-                     quantile(d2, probs = seq(0, 1, cuts), na.rm = TRUE),
-                     include.lowest = TRUE)
+        cut1 <- .bincode(d1$POWER.INDEX,
+                         quantile(d1$POWER.INDEX, probs = seq(0, 1, cuts)),
+                         include.lowest = TRUE)
+        cut2 <- .bincode(d1$POWER.INDEX,
+                         quantile(d2, probs = seq(0, 1, cuts), na.rm = TRUE),
+                         include.lowest = TRUE)
 
-    ## compare these two cuts takes albums previous in power ranking and looks at
-    ## where they land in the decile compares them to where they land using the new
-    ## decile with the new album entries if an album has a lower value in the cut
-    ## output on the second than the first, it trends down, and vice-versa.
-    diffs <- cut2 - cut1
-    d.diffs <- cbind(d.pre, diffs)
+        ## compare these two cuts takes albums previous in power ranking and looks at
+        ## where they land in the decile compares them to where they land using the new
+        ## decile with the new album entries if an album has a lower value in the cut
+        ## output on the second than the first, it trends down, and vice-versa.
+        diffs <- cut2 - cut1
+        d.diffs <- cbind(d.pre, diffs)
 
-    for (i in 1:nrow(d.diffs)) {
-        if (is.na(diffs[i]))
-            trend <- TREND.NEW
-        else if (diffs[i] == 0)
-            trend <- trend.no
-        else if (diffs[i] < 0)
-            trend <- trend.dwn
-        else if (diffs[i] > 0)
-            trend <- trend.up
-        matched <- which(d.sorted$ARTIST == d.pre$ARTIST[[i]] &
-                             d.sorted$X == d.pre$X[[i]])
-        if (d.sorted$TREND[[matched]] == "_update_")
-            d.sorted$TREND[[matched]] <- trend
+        for (i in 1:nrow(d.diffs)) {
+            if (is.na(diffs[i]))
+                trend <- TREND.NEW
+            else if (diffs[i] == 0)
+                trend <- trend.no
+            else if (diffs[i] < 0)
+                trend <- trend.dwn
+            else if (diffs[i] > 0)
+                trend <- trend.up
+            matched <- which(d.sorted$ARTIST == d.pre$ARTIST[[i]] &
+                                 d.sorted$X == d.pre$X[[i]])
+            if (d.sorted$TREND[[matched]] == "_update_")
+                d.sorted$TREND[[matched]] <- trend
+        }
+    } else {
+        d.sorted <- d.sorted[d.sorted$TREND != "_update_" & !is.na(d.sorted$POWER.INDEX), ]
     }
-} else {
-    d.sorted <- d.sorted[d.sorted$TREND != "_update_" & !is.na(d.sorted$POWER.INDEX), ]
 }
 
 releaseSlug <- function(text) {
@@ -175,11 +180,9 @@ releaseSlug <- function(text) {
 }
 
 get_response_content <- function(response) {
-    print("-------- NEW ONE --------")
-    print(response)
-    print(content(response))
-    print(status_code(response))
-    print(str(response))
+    ## print("-------- NEW ONE --------") print(response)
+    ## print(content(response)) print(status_code(response))
+    ## print(str(response))
     if (status_code(response) == 429) browser()
     if(!(status_code(response) %in% c(200,201,204))) {
         stop(paste(
@@ -196,7 +199,8 @@ assignInNamespace("get_response_content", get_response_content, ns = "spotifyr")
 
 get_track <- function(id) {
     tracks_url <- paste0(spotifyr::base_url, '/v1/tracks/')
-    search <- GET(url = paste0(tracks_url, id))
+    search <- GET(url = paste0(tracks_url, id),
+                  add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
     get_response_content(search)
 }
 
@@ -299,21 +303,24 @@ matchPossibilities <- function(string) {
 parseRankings <- function(i, df) {
     artist <- df$ARTIST[[i]]
     cat("\n")
-    print(decodeString(artist, toLower = FALSE))
+    ## print(decodeString(artist, toLower = FALSE))
     artists <- NULL
     while (is.null(artists)) {
         artists <- spotifyr::search(artist, type = 'artist')$artists$items
         if (is.null(artists)) Sys.sleep(5)
     }
-    if (!nchar(df$TREND[[i]])) {
-        return(findEntry(artists, df[i, ]))
+    if (!nchar(df$X[[i]])) {
+        out <- findEntry(artists, df[i, ], trend = "TREND" %in% names(df))
+        print(ncol(out))
+        return(out)
     } else {
         findEntry(artists, df[i, ], topTrackOnly = TRUE)
+        print(ncol(df[i, ]))
         return(df[i, ])
     }
 }
 
-findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE, artistIter = 1) {
+findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE, artistIter = 1, trend = TRUE) {
     artist <- entry$ARTIST
     release <- entry[[RELEASE.TYPE]]
     release.trunc <- releaseSlug(release)
@@ -352,6 +359,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
           , TREND.NEW
           , stringsAsFactors = FALSE
         )
+        if (!trend) new.entry <- new.entry[ , -7]
         return(setNames(new.entry, names(entry)))
     } else if (is.null(artist.id) && artistIter > 1) {
         warning("Release '", release, "' not found. You will need to complete ",
@@ -369,6 +377,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
           , TREND.NEW
           , stringsAsFactors = FALSE
         )
+        if (!trend) new.entry <- new.entry[ , -7]
         return(setNames(new.entry, names(entry)))
     }
     releases <- spotifyr::get_artist_albums(artist.id)$items
@@ -391,15 +400,27 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                                          file.path("./imgs/",
                                                    paste0(release.trunc, ".png")),
                                          quiet = TRUE)
-                    tracks.top <- spotifyr::simplify_result(
-                        spotifyr::get_artist_toptracks(artist.id, country = "US")
-                      , type = "songs"
-                    )
-                    ## find top track from album
-                    track <- as.character(
-                        tracks.top[tracks.top$album.id %in% release.id, "uri"][1]
-                    )
-                    if (is.na(track)) {
+                    tryCatch({
+                        tracks.top <- spotifyr::simplify_result(
+                            spotifyr::get_artist_toptracks(artist.id, country = "US")
+                          , type = "songs"
+                        )
+                        ## find top track from album
+                        track <- as.character(
+                            tracks.top[tracks.top$album.id %in% release.id, "uri"][1]
+                        )
+                    }, error = function(e) {
+                        track <<- NULL
+                    })
+                    if (is.null(track)) {
+                        tmp <- spotifyr::get_artist_toptracks(artist.id, country = "US")
+                        album.idx <- which(sapply(
+                            tmp$tracks,
+                            function(y) y$album$id == release.id
+                        ))[1]
+                        track <- tmp$tracks[[album.idx]]$uri
+                    }
+                    if (is.null(track) || is.na(track)) {
                         ## no track from this album is in the artist's top 10
                         pops <- sapply(tracks, function(x) {
                             get_track(x$id)$popularity
@@ -420,6 +441,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                       , TREND.NEW
                       , stringsAsFactors = FALSE
                     )
+                    if (!trend) new.entry <- new.entry[ , -7]
                     return(setNames(new.entry, names(entry)))
                 }
             }

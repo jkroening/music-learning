@@ -103,7 +103,7 @@ if (nrow(common)) {
                 d.new[ , RELEASE.TYPE] == common[ , RELEASE.TYPE][[i]] &
                 d.new[ , "X"] == ""
         )
-        if ("TREND" %in% d.new) {
+        if ("TREND" %in% names(d.new)) {
             if (d.new[update.pre, "POWER.INDEX"] > d.new[update.add, "POWER.INDEX"])
                 d.new[update.pre, "TREND"] <- trend.dwn
             else if (d.new[update.pre, "POWER.INDEX"] < d.new[update.add, "POWER.INDEX"])
@@ -124,7 +124,7 @@ d.sorted$RANK <- ranks
 d.sorted$POWER.INDEX <- as.numeric(d.sorted$POWER.INDEX)
 
 ## calculate and determine trends
-if ("TREND" %in% d.sorted) {
+if ("TREND" %in% names(d.sorted)) {
     d1 <- d.pre[!is.na(d.pre$POWER.INDEX), ] ## previous index scores
     d2 <- as.numeric(d.sorted$POWER.INDEX) ## all index scores, including new
 
@@ -311,11 +311,9 @@ parseRankings <- function(i, df) {
     }
     if (!nchar(df$X[[i]])) {
         out <- findEntry(artists, df[i, ], trend = "TREND" %in% names(df))
-        print(ncol(out))
         return(out)
     } else {
         findEntry(artists, df[i, ], topTrackOnly = TRUE)
-        print(ncol(df[i, ]))
         return(df[i, ])
     }
 }

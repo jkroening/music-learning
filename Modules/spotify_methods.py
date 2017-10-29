@@ -194,7 +194,7 @@ def parseAudioFeatures(song, uri, silent = False, token = None):
         song['spotify_album_id'] = track['spotify_album_id']
         album = pullSpotifyAlbum(song['spotify_album_id'], token = token)
         song['release_date'] = album['release_date']
-        song['year'] = album['year']
+        song['year'] = float(album['year'])
         song['duration'] = song.pop('duration_ms') / 1000.0
         ## add spotify uri to song data
         song['spotify_id'] = stripSpotifyURI(song.pop('uri'))

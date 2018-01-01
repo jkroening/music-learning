@@ -3,13 +3,25 @@ import json
 import fileinput
 import urllib2
 import re
+import argparse
 import pdb
 sys.path.append( "../Modules")
 import spotify_methods as sptfy
 from helpers import loadFile
 
 
-def main(ultimatechart, explicit = False):
+def main(ags, explicit = False):
+
+    if args.ultimatechart is not None:
+        with open(args.ultimatechart, 'r') as f:
+            ultimatechart = f.readlines()
+    else:
+        ultimatechart = None
+    if args.billboardchart is not None:
+        with open(args.billboardchart, 'r') as f:
+            billboardchart = [line.rstrip() for line in f]
+    else:
+        billboardchart = None
 
     cleans = []
     explicits = []
@@ -72,19 +84,43 @@ def main(ultimatechart, explicit = False):
                     if title_match or (artist_match and any([True for t in title.split(" ") if t in xs])):
                         print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
                         break
+    if billboardchart is not None:
+        print "Look into keeping the following songs in Airplay this week...\n"
+        for item in sorted_tracks[99:]:
+                artist = item['artist']
+                title = item['title']
+                artist = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', artist).lower())
+                title = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', title).lower())
+                for u in billboardchart:
+                    x = re.sub(r'([^\s\w]|_)+', '', re.sub("&", "and", u)).lower()
+                    if artist + " " in x:
+                        artist_match = True
+                    else:
+                        artist_match = False
+                    if title + " by" in x:
+                        title_match = True
+                    else:
+                        title_match = False
+                    xs = [i for i in x.split(" ")]
+                    if title_match or (artist_match and any([True for t in title.split(" ") if t in xs])):
+                        print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
+                        break
     else:
-        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
+        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg to --ultimatechart."
 
 
 if __name__ == "__main__":
     explicit = False
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], 'r') as f:
-            ultimatechart = f.readlines()
-        if len(sys.argv) == 3 and sys.argv[2] == 'explicit':
-            explicit = True
-    else:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ultimatechart')
+    parser.add_argument('--billboardchart')
+    parser.add_argument('--explicit')
+    args = parser.parse_args()
+
+    if args.ultimatechart is None:
         ultimatechart = None
         print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
+    if args.explicit:
+        explicit = args.explicit
 
-    main(ultimatechart, explicit)
+    main(args, explicit)

@@ -171,7 +171,10 @@ def checkTrackIndex(db, songs, selection):
 def processInput(terms = False, genres = False, input_playlist = None):
     ## set spotify auth
     config = loadFile("../config", "config.csv", True)
-    token = sptfy.authSpotipy()
+    try:
+        token = sptfy.authSpotipy()
+    except:
+        token = None
 
     ## load tracks in playlist
     if input_playlist is not None:

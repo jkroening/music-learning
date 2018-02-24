@@ -60,10 +60,12 @@ def main(ags, explicit = False):
         print item
     print "\n"
 
+    if ultimatechart is not None or billboardchart is not None:
+        print "Look into keeping the following songs in Airplay this week...\n"
+
     if ultimatechart is not None:
         nums = ('01', '02', '03', '04', '05', '06', '07', '08', '09') + tuple(str(x) for x in range(10, 101))
         uc = [item for item in ultimatechart if item.startswith(nums)]
-        print "Look into keeping the following songs in Airplay this week...\n"
         for item in sorted_tracks:
             if item['popularity'] < 75:
                 artist = item['artist']
@@ -84,8 +86,10 @@ def main(ags, explicit = False):
                     if title_match or (artist_match and any([True for t in title.split(" ") if t in xs])):
                         print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
                         break
+    else:
+        print "\nIf you want to compare to Ultimate Chart, please provide a txt version as an arg to --ultimatechart"
+
     if billboardchart is not None:
-        print "Look into keeping the following songs in Airplay this week...\n"
         for item in sorted_tracks[99:]:
                 artist = item['artist']
                 title = item['title']
@@ -106,8 +110,9 @@ def main(ags, explicit = False):
                         print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
                         break
     else:
-        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg to --ultimatechart."
+        print "\nIf you want to compare to Billboard Chart, please provide a txt version as an arg to --billboardchart"
 
+    print "\n"
 
 if __name__ == "__main__":
     explicit = False

@@ -34,8 +34,8 @@ def main():
             \n(0) descending\n(1) ascending\n\n"
         ))
 
-    if sort_col1 in ["tempo", "time_signature", "key", "mode", "popularity",
-                     "release_date", "year"]:
+    if sort_col1 in ["album", "artist", "tempo", "time_signature", "key",
+                     "mode", "popularity", "release_date", "year"]:
         sort_col2 = raw_input(
             "\nIn case of ties what second feature would you like to sort on: \
             \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \

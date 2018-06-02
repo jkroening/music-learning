@@ -90,18 +90,19 @@ def main(ags, explicit = False):
         print "\nIf you want to compare to Ultimate Chart, please provide a txt version as an arg to --ultimatechart"
 
     if billboardchart is not None:
-        for item in sorted_tracks[99:]:
+        for item in sorted_tracks:
+            if item['popularity'] < 75:
                 artist = item['artist']
                 title = item['title']
                 artist = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', artist).lower())
                 title = re.sub("&", "and", re.sub(r'([^\s\w]|_)+', '', title).lower())
                 for u in billboardchart:
                     x = re.sub(r'([^\s\w]|_)+', '', re.sub("&", "and", u)).lower()
-                    if artist + " " in x:
+                    if artist in x:
                         artist_match = True
                     else:
                         artist_match = False
-                    if title + " by" in x:
+                    if title in x:
                         title_match = True
                     else:
                         title_match = False
@@ -110,7 +111,7 @@ def main(ags, explicit = False):
                         print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
                         break
     else:
-        print "\nIf you want to compare to Billboard Chart, please provide a txt version as an arg to --billboardchart"
+        print "\nIf you want to compare to Billboard Chart, please provide a txt version as an arg to --billboardchart\n"
 
     print "\n"
 
@@ -122,9 +123,6 @@ if __name__ == "__main__":
     parser.add_argument('--explicit')
     args = parser.parse_args()
 
-    if args.ultimatechart is None:
-        ultimatechart = None
-        print "If you want to compare to Ultimate Chart, please provide a txt version as an arg."
     if args.explicit:
         explicit = args.explicit
 

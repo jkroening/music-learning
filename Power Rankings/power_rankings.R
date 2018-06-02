@@ -1,9 +1,9 @@
 ################################################################################
-## Takes a csv table (exported from Wordpress TablePress plugin) and a csv table
-## of updates/additions to make to the table, downloads the needed info from
-## Spotify, parses it, combines the tables, sorts them and updates the
-## appropriate cells. The exported table can them be imported back in to
-## TablePress.
+## Takes a tab-separated csv table (exported from Wordpress TablePress plugin)
+## and a comma-separated csv table of updates/additions to make to the table,
+## downloads the needed info from Spotify, parses it, combines the tables, sorts
+## them and updates the appropriate cells. The exported table can then be
+## imported back in to TablePress.
 ################################################################################
 
 suppressMessages(library(spotifyr))
@@ -35,10 +35,10 @@ if (length(args) == 2) {
         read.csv(args[2], stringsAsFactors = FALSE, encoding = "iso-8859-1")
     )
     out <- system(paste("file --mime", args[2]), intern = TRUE)
-    if (any(!stringi::stri_enc_isascii(unlist(d.add))) &&
-            !grepl("iso-8859", out) && !grepl("unknown-8bit", out))
-        stop("You probably forgot to save ", args[2], " as a Windows Comma ",
-             "Separated file!", call. = FALSE)
+    # if (any(!stringi::stri_enc_isascii(unlist(d.add))) &&
+    #        !grepl("iso-8859", out) && !grepl("unknown-8bit", out))
+    #    stop("You probably forgot to save ", args[2], " as a Windows Comma ",
+    #         "Separated file!", call. = FALSE)
     d.add$ARTIST <- iconv(d.add$ARTIST, "iso-8859-1", "utf-8")
     d.add$RELEASE <- iconv(d.add$RELEASE, "iso-8859-1", "utf-8")
     d.add <- setNames(
@@ -119,8 +119,14 @@ if (nrow(common)) {
 ## sort and re-rank and clean-up
 d.sorted <- d.new[order(d.new$POWER.INDEX, decreasing = TRUE), ]
 ranks <- rank(-(as.numeric(d.sorted$POWER.INDEX)), ties.method = "min")
-ranks[duplicated(ranks)] <- ""
-d.sorted$RANK <- ranks
+ranks.ties <- sapply(1:length(ranks), function(i) {
+    if (duplicated(ranks)[i]) {
+        return (paste0("T", ranks[i]))
+    } else if (i != length(ranks) && duplicated(ranks)[i + 1]) {
+        return (paste0("T", ranks[i]))
+    } else return (ranks[i])
+})
+d.sorted$RANK <- ranks.ties
 d.sorted$POWER.INDEX <- as.numeric(d.sorted$POWER.INDEX)
 
 ## calculate and determine trends
@@ -179,65 +185,67 @@ releaseSlug <- function(text) {
     tolower(text)
 }
 
-get_response_content <- function(response) {
-    ## print("-------- NEW ONE --------") print(response)
-    ## print(content(response)) print(status_code(response))
-    ## print(str(response))
-    if (status_code(response) == 429) browser()
-    if(!(status_code(response) %in% c(200,201,204))) {
-        stop(paste(
-            '\nError Code: '
-          , content(response)$error$status
-          , '\n'
-          , content(response)$error$message
-        ))
-    }
-    # Otherwise, return content
-    content(response)
-}
-assignInNamespace("get_response_content", get_response_content, ns = "spotifyr")
+## get_response_content <- function(response) {
+##     ## print("-------- NEW ONE --------") print(response)
+##     ## print(content(response)) print(status_code(response))
+##     ## print(str(response))
+##     if (httr::status_code(response) == 429) browser()
+##     if(!httr::status_code(response) %in% c(200,201,204)) {
+##         print(httr::content(response, as = "text"))
+##         stop(paste(
+##             '\nError Code: '
+##           , httr::content(response)$error$status
+##           , '\n'
+##           , httr::content(response)$error$message
+##         ))
+##     }
+##     # Otherwise, return content
+##     httr::content(response)
+## }
+## assignInNamespace("get_response_content", get_response_content, ns = "spotifyr")
 
-get_track <- function(id) {
-    tracks_url <- paste0(spotifyr::base_url, '/v1/tracks/')
-    search <- GET(url = paste0(tracks_url, id),
-                  add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
-    get_response_content(search)
-}
+## get_track <- function(id) {
+##     tracks_url <- paste0(BASE_URL, '/v1/tracks/')
+##     search <- httr::GET(url = paste0(tracks_url, id),
+##                   httr::add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
+##     get_response_content(search)
+## }
 
-search <- function(q, type, ...) {
-    search_url <- paste(base_url,'/v1/search',sep='')
-    response <- GET(url = search_url,
-                    query=list(q=q,type=type,...),
-                    add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
-    get_response_content(response)
-}
-assignInNamespace("search", search, ns = "spotifyr")
+## search <- function(q, type, ...) {
+##     search_url <- paste(BASE_URL, '/v1/search', sep = '')
+##     response <- httr::GET(url = search_url,
+##                     query=list(q=q,type=type,...),
+##                     httr::add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
+##     get_response_content(response)
+## }
+## ## assignInNamespace("search", search, ns = getNamespace("spotifyr")
 
-get_artist_toptracks <- function(id, country, ...) {
-  search <- GET(url = paste(artists_url,id,'/top-tracks',sep=''),
-                query=list(country=country),
-                add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
-  get_response_content(search)
-}
-assignInNamespace("get_artist_toptracks", get_artist_toptracks, ns = "spotifyr")
+## get_artist_toptracks <- function(id, country, ...) {
+##   search <- httr::GET(url = paste(ARTISTS_URL, id, '/top-tracks', sep = ''),
+##                 query=list(country=country),
+##                 httr::add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
+##   get_response_content(search)
+## }
+## assignInNamespace("get_artist_toptracks", get_artist_toptracks, ns = "spotifyr")
 
-get_album_tracks <- function(id, ...) {
-  search <- GET(url = paste(albums_url,id,'/','tracks',sep=''),query=list(...),
-                add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
-  get_response_content(search)
-}
-assignInNamespace("get_album_tracks", get_album_tracks, ns = "spotifyr")
+## get_album_tracks <- function(id, ...) {
+##     search <- httr::GET(url = paste(ALBUMS_URL, id, '/', 'tracks', sep = ''),
+##                         query = list(...),
+##                 httr::add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
+##   get_response_content(search)
+## }
+## assignInNamespace("get_album_tracks", get_album_tracks, ns = "spotifyr")
 
-get_artist_albums <- function(id, ...) {
-  search <- GET(url = paste(artists_url,id,'/albums',sep=''),
-                query=list(...),
-                add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
-  get_response_content(search)
-}
-assignInNamespace("get_artist_albums", get_artist_albums, ns = "spotifyr")
+## get_artist_albums <- function(id, ...) {
+##   search <- httr::GET(url = paste(ARTISTS_URL, id, '/albums', sep = ''),
+##                 query=list(...),
+##                 httr::add_headers(Authorization=paste('Bearer',SPOTIFY_ACCESS_TOKEN)))
+##   get_response_content(search)
+## }
+## assignInNamespace("get_artist_albums", get_artist_albums, ns = "spotifyr")
 
 getter <- function(url, query, ...) {
-    response <- GET(url = url, query = query, ...)
+    response <- httr::GET(url = url, query = query, ...)
     if (status_code(response) == 429) {
         print("Too many requests. Waiting...")
 
@@ -306,7 +314,7 @@ parseRankings <- function(i, df) {
     ## print(decodeString(artist, toLower = FALSE))
     artists <- NULL
     while (is.null(artists)) {
-        artists <- spotifyr::search(artist, type = 'artist')$artists$items
+        artists <- spotifyr::search_spotify(artist, type = 'artist')$artists$items
         if (is.null(artists)) Sys.sleep(5)
     }
     if (!nchar(df$X[[i]])) {
@@ -334,7 +342,10 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
         }
     }
     if (firstAttempt && is.null(artist.id)) {
-        artists <- spotifyr::search(decodeString(artist), type = 'artist')$artists$items
+        artists <- spotifyr::search_spotify(
+            decodeString(artist),
+            type = 'artist'
+        )$artists$items
         return(findEntry(
             artists
           , entry
@@ -378,7 +389,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
         if (!trend) new.entry <- new.entry[ , -7]
         return(setNames(new.entry, names(entry)))
     }
-    releases <- spotifyr::get_artist_albums(artist.id)$items
+    releases <- spotifyr:::get_artist_albums(artist.id)$items
     if (length(releases)) {
         for (k in 1:length(releases)) {
             possibilities <- matchPossibilities(release)
@@ -388,7 +399,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                 if ("US" %in% unlist(releases[[k]]$available_markets)) {
                     print(release)
                     release.id <- releases[[k]]$id
-                    tracks <- spotifyr::get_album_tracks(release.id)$items
+                    tracks <- spotifyr:::get_album_tracks(release.id)$items
                     if (length(tracks) < 2) ## it's a single
                         next
                     release.url <- releases[[k]]$external_urls
@@ -399,8 +410,8 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                                                    paste0(release.trunc, ".png")),
                                          quiet = TRUE)
                     tryCatch({
-                        tracks.top <- spotifyr::simplify_result(
-                            spotifyr::get_artist_toptracks(artist.id, country = "US")
+                        tracks.top <- spotifyr:::simplify_result(
+                            spotifyr:::get_artist_toptracks(artist.id, country = "US")
                           , type = "songs"
                         )
                         ## find top track from album
@@ -411,7 +422,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                         track <<- NULL
                     })
                     if (is.null(track)) {
-                        tmp <- spotifyr::get_artist_toptracks(artist.id, country = "US")
+                        tmp <- spotifyr:::get_artist_toptracks(artist.id, country = "US")
                         album.idx <- which(sapply(
                             tmp$tracks,
                             function(y) y$album$id == release.id
@@ -449,17 +460,21 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
     return(findEntry(artists, entry, firstAttempt, topTrackOnly, artistIter = artistIter + 1))
 }
 
+BASE_URL <- "https://api.spotify.com"
+API_VERSION <- 'v1'
+SEARCH_URL <- glue::glue('{BASE_URL}/{API_VERSION}/search')
+ALBUMS_URL <- glue::glue('{BASE_URL}/{API_VERSION}/albums')
+ARTISTS_URL <- glue::glue('{BASE_URL}/{API_VERSION}/artists')
 ## authorize spotifyr
 config <- read.csv("../config/config.csv", stringsAsFactors = FALSE, header = FALSE)
 SPOTIFY_CLIENT_ID = config[config[[1]] == "SPOTIFY_CLIENT_ID", 2]
 SPOTIFY_CLIENT_SECRET = config[config[[1]] == "SPOTIFY_CLIENT_SECRET", 2]
-SPOTIFY_REDIRECT_URI = config[config[[1]] == "SPOTIFY_REDIRECT_URI", 2]
 spotifyr::set_credentials(
     client_id = SPOTIFY_CLIENT_ID
   , client_secret = SPOTIFY_CLIENT_SECRET
-  , client_redirect_uri = SPOTIFY_REDIRECT_URI
 )
 SPOTIFY_ACCESS_TOKEN <- spotifyr::get_tokens()$access_token
+assign('access_token', SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
 
 unlink("./imgs", recursive = TRUE, force = TRUE)
 d.out <- data.frame(

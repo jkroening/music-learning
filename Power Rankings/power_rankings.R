@@ -74,7 +74,7 @@ LINK.END <- ".jpg')></div></a>"
 trend.no <- "<div class='no_change'>--</span>"
 trend.up <- "<img src='http://afireintheattic.com/wp-content/uploads/up_gr_40.png' width='25' height='25' class='center' />"
 trend.dwn <- "<img src='http://afireintheattic.com/wp-content/uploads/down_rd_40.png' width='25' height='25' class='center' />"
-TREND.NEW <- "<div class='new_entry'>NEW ENTRY</span>"
+TREND.NEW <- "<div class='new_entry'>NEW<br>ENTRY</span>"
 
 ## process
 
@@ -182,6 +182,7 @@ releaseSlug <- function(text) {
     text <- gsub("\\'", "", text)
     text <- gsub("\\s", "", text)
     text <- gsub("\\:", "", text)
+    text <- gsub("\\/", "", text)
     tolower(text)
 }
 
@@ -484,5 +485,5 @@ d.out <- data.frame(
 
 ## export to CSV
 names(d.out)[which(names(d.out) == "X")] <- ""
-names(d.out)[which(names(d.out) == "POWER.INDEX")] <- "POWER INDEX"
+names(d.out)[which(names(d.out) == "POWER.INDEX")] <- "POWER<br>INDEX"
 write.csv(format(d.out), file = file.path("output", out.name), row.names = FALSE)

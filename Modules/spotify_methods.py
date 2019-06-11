@@ -7,7 +7,7 @@ from flask_oauthlib.client import OAuth, OAuthException
 import spotipy
 from spotipy import util, oauth2
 import json
-import urllib2
+import urllib3
 import urllib
 import base64
 import fileinput
@@ -70,12 +70,12 @@ def getSpotifyCred(username, config):
     SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
     scope = 'user-library-read'
     token = util.prompt_for_user_token(username, scope, SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
-    print token
+    print(token)
     if token:
         sp = spotipy.Spotify(auth = token)
         return sp
     else:
-        print "Can't get token for", username
+        print("Can't get token for", username)
 
 def retrySpotipy(func):
     # token = util.prompt_for_user_token(
@@ -92,7 +92,7 @@ def retrySpotipy(func):
             kwargs['token'] = token
             return func(*args, **kwargs)
         except Exception as e:
-            print e
+            print(e)
     return retry
 
 def getSpotifyTrackIDs(text):
@@ -204,7 +204,7 @@ def parseAudioFeatures(song, uri, silent = False, token = None):
         song.pop('type', None)
         song.pop('id', None)
     elif not silent:
-        print "Song audio features not found: {}".format(uri)
+        print("Song audio features not found: {}".format(uri))
     return song
 
 def pullSpotifyTrack(track_id, token = None):
@@ -299,9 +299,9 @@ def stripSpotifyURI(uri):
 
 def formatLocalTrack(link):
     s = link.split("local/")[1]
-    artist = urllib2.unquote(s.split("/")[0])
-    title = urllib2.unquote(s.split("/")[2])
-    album = urllib2.unquote(s.split("/")[1])
+    artist = urllib3.unquote(s.split("/")[0])
+    title = urllib3.unquote(s.split("/")[2])
+    album = urllib3.unquote(s.split("/")[1])
     return artist, title, album
 
 def writeIDsToURI(ids, location, filename):
@@ -369,8 +369,8 @@ def searchUserPlaylists(sp, user, tracks):
             results = sp.user_playlist(user, playlist['id'], fields="tracks,next")
             ts = results['tracks']
             for t in enumerate(ts['items']):
-                # print str(t[1]['track']['uri'])
+                # print(str(t[1]['track']['uri']))
                 if str(t[1]['track']['uri']) in tracks:
-                    # print tracks[1]
-                    print "\n" + playlist['name']
-                    print "Track #%s" % (t[0] + 1)
+                    # print(tracks[1])
+                    print("\n" + playlist['name'])
+                    print("Track #%s" % (t[0] + 1))

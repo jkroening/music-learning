@@ -70,8 +70,8 @@ def expandToPoints(X, df, artist, title):
         start = np.where((df.artist.str.lower() == artist.lower()) & \
                          (df.title.str.lower() == title.lower()))[0][0]
     except:
-        print "Artist name and Song title not found as entered..."
-        print "Please try again."
+        print("Artist name and Song title not found as entered...")
+        print("Please try again.")
         sys.exit()
     ds = distances(X, X[start, : ])
     dfs = sortByDistance(df, ds)
@@ -82,8 +82,8 @@ def walkPoints(X, df, artist, title):
         start = np.where((df.artist.str.lower() == artist.lower()) & \
                          (df.title.str.lower() == title.lower()))[0][0]
     except:
-        print "Artist name and Song title not found as entered..."
-        print "Please try again."
+        print("Artist name and Song title not found as entered...")
+        print("Please try again.")
         sys.exit()
     out_list = ["spotify:track:%s" % df.iloc[start].spotify_id]
     curr_point = X[start, : ].copy()

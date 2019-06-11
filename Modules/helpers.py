@@ -31,7 +31,7 @@ def loadFile(location, filename, as_dict = False):
             else:
                 infile = f.read()
     except Exception as e:
-        print e
+        print(e)
         if ".json" in filename:
             infile = {}
         elif ".csv" in filename:
@@ -104,14 +104,14 @@ def parseLocalTrackURL(track):
 def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, query = 'Select next song (enter number): '):
     if not songs.empty:
         songs.index = np.arange(1, len(songs) + 1)
-        print "\n", songs[["title", "artist"]], "\n"
+        print("\n", songs[["title", "artist"]], "\n")
     else:
-        print ""
+        print("")
     if len(missings) > 0:
         j = len(songs) + 1
         k = len(songs) + len(missings) + 1
         missings_index = np.arange(j, k)
-        print "Songs without metadata:\n" ## do not have neighbors
+        print("Songs without metadata:\n") ## do not have neighbors
         new_missings = []
         for idx, missing_track in zip(missings_index, missings):
             if 'spotify.com' in missing_track:
@@ -120,9 +120,9 @@ def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, quer
                 a = missing_track[0]
                 t = missing_track[1]
             new_missings.append((a, t))
-            print idx, "\t", a, "\t", t
+            print(idx, "\t", a, "\t", t)
         missings = new_missings
-        print "\n"
+        print("\n")
     else:
         k = len(songs) + 1
     selection = int(raw_input(query))
@@ -155,7 +155,7 @@ def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, quer
         playlist.append("{}.  {} - {}".format(i, a, t))
     else:
         playlist.append("{}. {} - {}".format(i, a, t))
-    print "\nYou just chose: {} - {}".format(a, t)
+    print("\nYou just chose: {} - {}".format(a, t))
     return songs, missings, ids, playlist, artist, title, song
 
 def checkTrackIndex(db, songs, selection):
@@ -207,7 +207,7 @@ def processInput(terms = False, genres = False, input_playlist = None):
                     if song is not None:
                         song_db = song_db.append(song, ignore_index = True)
             else:
-                print "{} not found.".format(track)
+                print("{} not found.".format(track))
                 unfound_tracks.append(track)
         else:
             if not dbm.lookupSongBySpotifyID(track, song_db):
@@ -215,7 +215,7 @@ def processInput(terms = False, genres = False, input_playlist = None):
                 if song is not None:
                     song_db = song_db.append(song, ignore_index = True)
                 else:
-                    print "{} not found.".format(track)
+                    print("{} not found.".format(track))
                     unfound_tracks.append(track)
     song_db = song_db.drop_duplicates('spotify_id')
     dbm.saveDataFrame(song_db, "../Databases", "song_db.csv")
@@ -260,7 +260,7 @@ def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
     if len(genres) < 1 and makePlaylists:
         with open('../output/unknowntracks.txt', 'a+') as f:
             f.write('spotify:track:%s\r' % track_id)
-            print "Not found: {} - {}".format(artist_name, track_name)
+            print("Not found: {} - {}".format(artist_name, track_name))
     else:
         e, i, p, o, u, r = [0] * 6
         for g in genres:

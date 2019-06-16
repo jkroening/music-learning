@@ -24,10 +24,11 @@ if (length(args) > 2)
 ## load data
 d.pre <- read.csv(args[1], stringsAsFactors = FALSE, encoding = "windows-1252",
                   sep = "\t")
+
 ## if empty d.pre
 if (nrow(d.pre) == 0) {
     d.pre <- data.frame(t(matrix(rep("", 7))), stringsAsFactors = FALSE)
-    colnames(d.pre) <- c("RANK", "X", "ARTIST", "ALBUM", "GENRE", "POWER.INDEX", "TREND")
+    colnames(d.pre) <- c("RANK", "X", "ARTIST", "ALBUM", "GENRE", "POWER.br.INDEX", "TREND")
 }
 
 if (length(args) == 2) {
@@ -48,7 +49,7 @@ if (length(args) == 2) {
           , d.add$ARTIST
           , d.add$RELEASE
           , d.add$GENRE
-          , d.add$POWER.INDEX
+          , d.add$POWER.br.INDEX
           , if ("TREND" %in% names(d.pre)) rep("", nrow(d.add)) else NULL
         ), stringsAsFactors = FALSE)
       , names(d.pre)
@@ -104,21 +105,21 @@ if (nrow(common)) {
                 d.new[ , "X"] == ""
         )
         if ("TREND" %in% names(d.new)) {
-            if (d.new[update.pre, "POWER.INDEX"] > d.new[update.add, "POWER.INDEX"])
+            if (d.new[update.pre, "POWER.br.INDEX"] > d.new[update.add, "POWER.br.INDEX"])
                 d.new[update.pre, "TREND"] <- trend.dwn
-            else if (d.new[update.pre, "POWER.INDEX"] < d.new[update.add, "POWER.INDEX"])
+            else if (d.new[update.pre, "POWER.br.INDEX"] < d.new[update.add, "POWER.br.INDEX"])
                 d.new[update.pre, "TREND"] <- trend.up
             else d.new[update.pre, "TREND"] <- trend.no
         }
-        d.new[update.pre, "POWER.INDEX"] <- d.new[update.add, "POWER.INDEX"]
+        d.new[update.pre, "POWER.br.INDEX"] <- d.new[update.add, "POWER.br.INDEX"]
         d.new[update.pre, "GENRE"] <- d.new[update.add, "GENRE"]
         d.new <- d.new[-update.add, ]
     }
 }
 
 ## sort and re-rank and clean-up
-d.sorted <- d.new[order(d.new$POWER.INDEX, decreasing = TRUE), ]
-ranks <- rank(-(as.numeric(d.sorted$POWER.INDEX)), ties.method = "min")
+d.sorted <- d.new[order(d.new$POWER.br.INDEX, decreasing = TRUE), ]
+ranks <- rank(-(as.numeric(d.sorted$POWER.br.INDEX)), ties.method = "min")
 ranks.ties <- sapply(1:length(ranks), function(i) {
     if (duplicated(ranks)[i]) {
         return (paste0("T", ranks[i]))
@@ -127,21 +128,21 @@ ranks.ties <- sapply(1:length(ranks), function(i) {
     } else return (ranks[i])
 })
 d.sorted$RANK <- ranks.ties
-d.sorted$POWER.INDEX <- as.numeric(d.sorted$POWER.INDEX)
+d.sorted$POWER.br.INDEX <- as.numeric(d.sorted$POWER.br.INDEX)
 
 ## calculate and determine trends
 if ("TREND" %in% names(d.sorted)) {
-    d1 <- d.pre[!is.na(d.pre$POWER.INDEX), ] ## previous index scores
-    d2 <- as.numeric(d.sorted$POWER.INDEX) ## all index scores, including new
+    d1 <- d.pre[!is.na(d.pre$POWER.br.INDEX), ] ## previous index scores
+    d2 <- as.numeric(d.sorted$POWER.br.INDEX) ## all index scores, including new
 
-    if (nrow(d.pre) != 1 && d.pre$POWER.INDEX != "") {
+    if (nrow(d.pre) != 1 && d.pre$POWER.br.INDEX != "") {
         cuts <- if (length(d2) < 50) 0.25 else 0.2
         cuts <- if (length(d2) > 80) 0.10 else cuts
 
-        cut1 <- .bincode(d1$POWER.INDEX,
-                         quantile(d1$POWER.INDEX, probs = seq(0, 1, cuts)),
+        cut1 <- .bincode(d1$POWER.br.INDEX,
+                         quantile(d1$POWER.br.INDEX, probs = seq(0, 1, cuts)),
                          include.lowest = TRUE)
-        cut2 <- .bincode(d1$POWER.INDEX,
+        cut2 <- .bincode(d1$POWER.br.INDEX,
                          quantile(d2, probs = seq(0, 1, cuts), na.rm = TRUE),
                          include.lowest = TRUE)
 
@@ -167,7 +168,7 @@ if ("TREND" %in% names(d.sorted)) {
                 d.sorted$TREND[[matched]] <- trend
         }
     } else {
-        d.sorted <- d.sorted[d.sorted$TREND != "_update_" & !is.na(d.sorted$POWER.INDEX), ]
+        d.sorted <- d.sorted[d.sorted$TREND != "_update_" & !is.na(d.sorted$POWER.br.INDEX), ]
     }
 }
 
@@ -365,7 +366,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
           , artist
           , release
           , entry$GENRE
-          , entry$POWER.INDEX
+          , entry$POWER.br.INDEX
           , TREND.NEW
           , stringsAsFactors = FALSE
         )
@@ -383,7 +384,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
           , artist
           , release
           , entry$GENRE
-          , entry$POWER.INDEX
+          , entry$POWER.br.INDEX
           , TREND.NEW
           , stringsAsFactors = FALSE
         )
@@ -447,7 +448,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
                       , artist
                       , release
                       , entry$GENRE
-                      , entry$POWER.INDEX
+                      , entry$POWER.br.INDEX
                       , TREND.NEW
                       , stringsAsFactors = FALSE
                     )
@@ -485,5 +486,5 @@ d.out <- data.frame(
 
 ## export to CSV
 names(d.out)[which(names(d.out) == "X")] <- ""
-names(d.out)[which(names(d.out) == "POWER.INDEX")] <- "POWER<br>INDEX"
+names(d.out)[which(names(d.out) == "POWER.br.INDEX")] <- "POWER<br>INDEX"
 write.csv(format(d.out), file = file.path("output", out.name), row.names = FALSE)

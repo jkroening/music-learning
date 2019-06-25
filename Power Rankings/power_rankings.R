@@ -49,7 +49,7 @@ if (length(args) == 2) {
           , d.add$ARTIST
           , d.add$RELEASE
           , d.add$GENRE
-          , d.add$POWER.br.INDEX
+          , d.add$POWER.INDEX
           , if ("TREND" %in% names(d.pre)) rep("", nrow(d.add)) else NULL
         ), stringsAsFactors = FALSE)
       , names(d.pre)

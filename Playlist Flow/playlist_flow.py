@@ -34,9 +34,14 @@ def main():
     if genres:
         cols = cols + GENRE_AGGREGATES
 
-    X = hlpr.dataFrameToMatrix(db, cols_to_keep = cols)
+    X = hlpr.dataFrameToMatrix(
+        db,
+        cols_to_keep = cols,
+        fillNA = True,
+        centerScale = True
+    )
     # X = X.fillna(0)
-    X = dam.minMaxScaleData(X)
+    # X = dam.minMaxScaleData(X)
     # X2 = dam.transformPCA(X, 2)
     # clusters2 = dam.classifyUnsupervised(X2, 3)
     # clusters1 = dam.classifyUnsupervised(X, 3)

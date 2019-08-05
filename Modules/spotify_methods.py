@@ -299,9 +299,9 @@ def stripSpotifyURI(uri):
 
 def formatLocalTrack(link):
     s = link.split("local/")[1]
-    artist = urllib3.unquote(s.split("/")[0])
-    title = urllib3.unquote(s.split("/")[2])
-    album = urllib3.unquote(s.split("/")[1])
+    artist = urllib.unquote(s.split("/")[0])
+    title = urllib.unquote(s.split("/")[2])
+    album = urllib.unquote(s.split("/")[1])
     return artist, title, album
 
 def writeIDsToURI(ids, location, filename):

@@ -29,7 +29,7 @@ def flattenDict(d):
         if isinstance(value, dict):
             return [ (key + '.' + k, v) for k, v in flattenDict(value).items() ]
         else:
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 return [ (key, unidecode(value)) ]
             else:
                 return [ (key, value) ]
@@ -44,7 +44,7 @@ def flattenDictCustom(d):
         if isinstance(value, dict):
             return [ (k, v) for k, v in flattenDict(value).items() ]
         else:
-            if isinstance(value, unicode):
+            if isinstance(value, str):
                 return [ (key, unidecode(value)) ]
             else:
                 return [ (key, value) ]

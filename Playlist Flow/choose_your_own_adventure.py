@@ -83,7 +83,7 @@ def main():
             db = db[db.index != song]
         if db.empty and unfound_tracks.empty:
             break
-        # print "\nYou just chose: {} - {}".format(artist, title)
+        # print("\nYou just chose: {} - {}".format(artist, title))
         neighbors, unfound_tracks, ids, playlist, artist, title, song = hlpr.chooseTrack(
               db
             , neighbors
@@ -130,9 +130,9 @@ def main():
         # )).argmax()
 
     sptfy.writeIDsToURI(ids, "../output", "adventure.txt")
-    print "\n\nHere is your track order:\n"
+    print("\n\nHere is your track order:\n")
     for p in playlist:
-        print p
+        print(p)
 
 
 if __name__ == "__main__":

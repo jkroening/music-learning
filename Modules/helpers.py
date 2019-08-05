@@ -102,6 +102,7 @@ def parseLocalTrackURL(track):
     return artist, track
 
 def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, query = 'Select next song (enter number): '):
+    pd.set_option('display.max_rows', 100)
     if not songs.empty:
         songs.index = np.arange(1, len(songs) + 1)
         print("\n", songs[["title", "artist"]], "\n")
@@ -125,9 +126,9 @@ def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, quer
         print("\n")
     else:
         k = len(songs) + 1
-    selection = int(raw_input(query))
+    selection = int(input(query))
     while selection not in np.arange(1, k):
-        selection = int(raw_input(query))
+        selection = int(input(query))
     if len(missings) > 0:
         if selection in np.arange(j, k):
             ids.append(selection)
@@ -280,7 +281,7 @@ def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
             if g not in all_genres:
                 user_input = [None]
                 while not os.path.isfile("../Databases/genres/{}.txt".format(user_input[0])):
-                    user_input = raw_input(
+                    user_input = input(
                         '\nIn which genre group(s) does {} belong? [{}] (separate by space)\
                         \nelectronic \
                         \nindie \
@@ -332,7 +333,7 @@ def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
                 if g not in all_genres:
                     user_input = [None]
                     while not os.path.isfile("../Databases/genres/{}.txt".format(user_input[0])):
-                        user_input = raw_input(
+                        user_input = input(
                             '\nIn which genre group(s) does {} belong? [{}] (separate by space)\
                             \nelectronic \
                             \nindie \

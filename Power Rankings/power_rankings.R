@@ -9,8 +9,9 @@
 suppressMessages(library(spotifyr))
 suppressMessages(library(dplyr))
 suppressMessages(library(stringi))
+options(warn = 1)
 
-args = commandArgs(trailingOnly = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) == 0)
     stop("Must provide input CSV file(s)!", call. = FALSE)
@@ -254,17 +255,21 @@ getter <- function(url, query, ...) {
     }
 }
 
-manualURI <- function(artist, release) {
+manualURI <- function(artist, release, curr_URI = NULL) {
     cat("What is the Spotify URI of the most popular song on the release? ")
     cat("(Enter song title or local link if not available on Spotify): ")
     track <- readLines(con = "stdin", 1)
-    if (!grepl("spotify:track:", track) && !grepl("open.spotify.com", track))
+    if (length(track) < 1 && !is.null(curr_URI)) {
+        track <- curr_URI
+    } else if (!grepl("spotify:track:", track) &&
+               !grepl("open.spotify.com", track)) {
         track <- paste0(
             "https://open.spotify.com/local/"
           , gsub(" ", "%20", artist), "/"
           , gsub(" ", "%20", release), "/"
           , gsub(" ", "%20", track)
         )
+    }
     cat(track, file = "output/spotify_playlist.txt", append = TRUE, sep = "\n")
 }
 
@@ -316,7 +321,9 @@ parseRankings <- function(i, df) {
     ## print(decodeString(artist, toLower = FALSE))
     artists <- NULL
     while (is.null(artists)) {
-        artists <- spotifyr::search_spotify(artist, type = 'artist')$artists$items
+        artists <- spotifyr:::search_spotify(
+            artist, type = 'artist', market = "US", authorization = access_token
+        )
         if (is.null(artists)) Sys.sleep(5)
     }
     if (!nchar(df$X[[i]])) {
@@ -333,21 +340,25 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
     release <- entry[[RELEASE.TYPE]]
     release.trunc <- releaseSlug(release)
     artist.id <- NULL
-    if (length(artists) && artistIter <= length(artists)) {
-        for (j in artistIter:length(artists)) {
+    if ("name" %in% names(artists) &&
+        length(artists$name) > 0 &&
+        artistIter <= length(artists$name)) {
+        for (j in artistIter:length(artists$name)) {
             ## find first exact match
-            possibilities <- matchPossibilities(artist)
-            if (stringi::stri_trans_tolower(artists[[j]]$name) %in% possibilities) {
-                artist.id <- artists[[j]]$id
+            poss <- matchPossibilities(artist)
+            if (stringi::stri_trans_tolower(artists$name[j]) %in% poss) {
+                artist.id <- artists$id[j]
                 break
             }
         }
     }
     if (firstAttempt && is.null(artist.id)) {
-        artists <- spotifyr::search_spotify(
+        artists <- spotifyr:::search_spotify(
             decodeString(artist),
-            type = 'artist'
-        )$artists$items
+            type = 'artist',
+            market = "US",
+            authorization = access_token
+        )
         return(findEntry(
             artists
           , entry
@@ -355,6 +366,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
           , topTrackOnly = topTrackOnly
         ))
     } else if (is.null(artist.id) && artistIter == 1) {
+        print(release)
         warning("Artist '", artist, "' not found. You will need to complete ",
                 "the entry manually.", call. = FALSE, immediate. = TRUE)
         manualURI(artist, release)
@@ -373,6 +385,7 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
         if (!trend) new.entry <- new.entry[ , -7]
         return(setNames(new.entry, names(entry)))
     } else if (is.null(artist.id) && artistIter > 1) {
+        print(release)
         warning("Release '", release, "' not found. You will need to complete ",
                 "the entry manually.", call. = FALSE, immediate. = TRUE)
         manualURI(artist, release)
@@ -391,55 +404,68 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
         if (!trend) new.entry <- new.entry[ , -7]
         return(setNames(new.entry, names(entry)))
     }
-    releases <- spotifyr:::get_artist_albums(artist.id)$items
-    if (length(releases)) {
-        for (k in 1:length(releases)) {
+    releases <- spotifyr:::get_artist_albums(
+        artist.id, market = "US", authorization = access_token
+    )
+    if ("name" %in% names(releases) && length(releases$name) > 0) {
+        for (k in 1:length(releases$name)) {
             possibilities <- matchPossibilities(release)
-            release.iter <- stringi::stri_trans_tolower(releases[[k]]$name)
-            if (release.iter %in% possibilities ||
-                    any(sapply(possibilities, function(x) grepl(x, release.iter)))) {
-                if ("US" %in% unlist(releases[[k]]$available_markets)) {
+            release.iter <- stringi::stri_trans_tolower(releases$name[k])
+            poss <- any(sapply(possibilities, function(x) {
+                return(grepl(x, release.iter))
+            }))
+            if (release.iter %in% possibilities || poss) {
+                release.id <- releases$id[k]
+                tracks <- spotifyr:::get_album_tracks(
+                    release.id, authorization = access_token
+                )
+                if (length(tracks$track_number) < 3) ## it's a single
+                    next
+                if ("US" %in% unlist(tracks$available_markets)) {
                     print(release)
-                    release.id <- releases[[k]]$id
-                    tracks <- spotifyr:::get_album_tracks(release.id)$items
-                    if (length(tracks) < 2) ## it's a single
-                        next
-                    release.url <- releases[[k]]$external_urls
+                    release.url <- releases$external_urls.spotify[k]
                     dir.create(file.path("./imgs"), showWarnings = FALSE)
-                    if (!topTrackOnly)
-                           download.file(releases[[k]]$images[[1]]$url,
-                                         file.path("./imgs/",
-                                                   paste0(release.trunc, ".png")),
-                                         quiet = TRUE)
-                    tryCatch({
-                        tracks.top <- spotifyr:::simplify_result(
-                            spotifyr:::get_artist_toptracks(artist.id, country = "US")
-                          , type = "songs"
+                    if (!topTrackOnly) {
+                        download.file(
+                            releases$images[k][[1]]$url[1],
+                            file.path("./imgs/", paste0(release.trunc, ".png")),
+                            quiet = TRUE
                         )
+                    }
+                    tryCatch({
+                        tracks.top <- spotifyr:::get_artist_top_tracks(
+                                                     artist.id, market = "US", authorization = access_token
+                                                 )
                         ## find top track from album
                         track <- as.character(
-                            tracks.top[tracks.top$album.id %in% release.id, "uri"][1]
+                            tracks.top[
+                                tracks.top$album.id %in% release.id,
+                                "uri"
+                            ][1]
                         )
                     }, error = function(e) {
                         track <<- NULL
                     })
-                    if (is.null(track)) {
-                        tmp <- spotifyr:::get_artist_toptracks(artist.id, country = "US")
-                        album.idx <- which(sapply(
-                            tmp$tracks,
-                            function(y) y$album$id == release.id
-                        ))[1]
-                        track <- tmp$tracks[[album.idx]]$uri
-                    }
                     if (is.null(track) || is.na(track)) {
                         ## no track from this album is in the artist's top 10
-                        pops <- sapply(tracks, function(x) {
-                            get_track(x$id)$popularity
+                        pops <- sapply(tracks$id, function(x) {
+                            spotifyr:::get_track(
+                                           x, market = "US", authorization = access_token
+                                       )$popularity
                         })
-                        track <- tracks[[which(pops %in% max(pops, na.rm = TRUE))[1]]]$uri
+                        track <- tracks$uri[[
+                                                which(pops %in% max(pops, na.rm = TRUE))[1]
+                                                ]]
                     }
-                    if (is.na(track) || is.null(track)) stop("something went wrong...")
-                    cat(track, file = "output/spotify_playlist.txt", append = TRUE, sep = "\n")
+                    if (is.na(track) || is.null(track)) {
+                        stop("Something went wrong...")
+                    }
+                    cat(
+                        track,
+                        file = "output/spotify_playlist.txt",
+                        append = TRUE,
+                        sep = "\n"
+                    )
                     if (topTrackOnly) return(NULL)
                     new.entry <- data.frame(
                         entry$RANK
@@ -459,7 +485,13 @@ findEntry <- function(artists, entry, firstAttempt = TRUE, topTrackOnly = FALSE,
         }
     }
     ## try next artist in list
-    return(findEntry(artists, entry, firstAttempt, topTrackOnly, artistIter = artistIter + 1))
+    return(findEntry(
+        artists,
+        entry,
+        firstAttempt,
+        topTrackOnly,
+        artistIter = artistIter + 1
+    ))
 }
 
 BASE_URL <- "https://api.spotify.com"
@@ -471,11 +503,9 @@ ARTISTS_URL <- glue::glue('{BASE_URL}/{API_VERSION}/artists')
 config <- read.csv("../config/config.csv", stringsAsFactors = FALSE, header = FALSE)
 SPOTIFY_CLIENT_ID = config[config[[1]] == "SPOTIFY_CLIENT_ID", 2]
 SPOTIFY_CLIENT_SECRET = config[config[[1]] == "SPOTIFY_CLIENT_SECRET", 2]
-spotifyr::set_credentials(
-    client_id = SPOTIFY_CLIENT_ID
-  , client_secret = SPOTIFY_CLIENT_SECRET
-)
-SPOTIFY_ACCESS_TOKEN <- spotifyr::get_tokens()$access_token
+Sys.setenv(SPOTIFY_CLIENT_ID = SPOTIFY_CLIENT_ID)
+Sys.setenv(SPOTIFY_CLIENT_SECRET = SPOTIFY_CLIENT_SECRET)
+SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
 assign('access_token', SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
 
 unlink("./imgs", recursive = TRUE, force = TRUE)

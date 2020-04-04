@@ -95,6 +95,7 @@ def main():
     ]
 
     print("\nThese songs will be removed:\n")
+    pd.set_option('display.max_rows', None)
     print(remove_db[['artist', 'title', sort_col1, sort_col2]])
     print("")
     print("\n".join(remove_tracks))

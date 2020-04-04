@@ -17,38 +17,38 @@ import spotify_methods as sptfy
 def main():
 
     ## which feature to sort on
-    sort_col1 = raw_input(
+    sort_col1 = input(
         "\nEnter one of the following features to sort on: \
         \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
         \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
         \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
     )
     ## ascending or descending (1 = ascending, 0 = descending)
-    ascending1 = int(raw_input(
+    ascending1 = int(input(
         "\nChoose sort order for this feature: \
         \n(0) descending\n(1) ascending\n\n"
     ))
     while ascending1 != 0 and ascending1 != 1:
-        ascending1 = int(raw_input(
+        ascending1 = int(input(
             "\nEnter either 0 or 1: \
             \n(0) descending\n(1) ascending\n\n"
         ))
 
     if sort_col1 in ["album", "artist", "tempo", "time_signature", "key",
                      "mode", "popularity", "release_date", "year"]:
-        sort_col2 = raw_input(
+        sort_col2 = input(
             "\nIn case of ties what second feature would you like to sort on: \
             \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
             \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
             \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
         )
         ## ascending or descending (1 = ascending, 0 = descending)
-        ascending2 = int(raw_input(
+        ascending2 = int(input(
             "\nChoose sort order for this feature: \
             \n(0) descending\n(1) ascending\n\n"
         ))
         while ascending2 != 0 and ascending2 != 1:
-            ascending2 = int(raw_input(
+            ascending2 = int(input(
             "\nEnter either 0 or 1: \
             \n(0) descending\n(1) ascending\n\n"
         ))

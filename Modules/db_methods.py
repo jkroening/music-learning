@@ -98,7 +98,7 @@ def buildArtistDataFrame(song_db, artist_db, token = None):
             ## reload genres since new_genres were just added
             genres = buildSubgenres()
             for g in set(gs).difference(new_genres):
-                for k, v in genres.iteritems():
+                for k, v in genres.items():
                     if g in v:
                         if "ALL.{}".format(k) in artist:
                             artist["ALL.{}".format(k)] += 1

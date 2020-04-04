@@ -1,7 +1,6 @@
 import sys
 import json
 import fileinput
-import urllib2
 import re
 import argparse
 import pdb
@@ -50,12 +49,12 @@ def main(ags, explicit = False):
                 if e['artist'] in c['artist'] and e['title'][:3] in c['title'][:3]: # compare artist name and first 4 characters of track name
                     e['spotify_id'] = c['spotify_id']
 
-    print "\n"
+    print("\n")
     for item in sorted_tracks:
-        print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
-    print "\n"
+        print(str(item['popularity']) + " :: " + item['artist'] + " - " + item['title'])
+    print("\n")
     for item in sorted_tracks:
-        print "spotify:track:{}".format(item['spotify_id'].strip())
+        print("spotify:track:{}".format(item['spotify_id'].strip()))
     for item in local_tracks:
         print item
     print "\n"
@@ -90,6 +89,7 @@ def main(ags, explicit = False):
         print "\nIf you want to compare to Ultimate Chart, please provide a txt version as an arg to --ultimatechart"
 
     if billboardchart is not None:
+        print("\nLook into keeping the following songs in Airplay this week...\n")
         for item in sorted_tracks:
             if item['popularity'] < 75:
                 artist = item['artist']
@@ -108,12 +108,12 @@ def main(ags, explicit = False):
                         title_match = False
                     xs = [i for i in x.split(" ")]
                     if title_match or (artist_match and any([True for t in title.split(" ") if t in xs])):
-                        print str(item['popularity']) + " :: " + item['artist'] + " - " + item['title']
+                        print(str(item['popularity']) + " :: " + item['artist'] + " - " + item['title'])
                         break
     else:
-        print "\nIf you want to compare to Billboard Chart, please provide a txt version as an arg to --billboardchart\n"
+        print("\nIf you want to compare to Billboard Chart, please provide a txt version as an arg to --billboardchart\n")
 
-    print "\n"
+    print("\n")
 
 if __name__ == "__main__":
     explicit = False

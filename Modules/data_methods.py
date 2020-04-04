@@ -3,7 +3,7 @@ from sklearn import preprocessing
 from sklearn import cluster
 import pandas as pd
 import numpy as np
-import plotly.plotly as py
+import chart_studio.plotly as py
 import sys
 from plotly.graph_objs import *
 import pdb

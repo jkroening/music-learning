@@ -69,8 +69,11 @@ def buildArtistDataFrame(song_db, artist_db, token = None):
             match_genres = match_subset[match_subset.values != 0].index
             genres_sum = sum(match_subset)
         if genres_sum == 0:
-            artist = sptfy.pullSpotifyArtist(row.spotify_artist_id, token = token)
-            album = sptfy.pullSpotifyAlbum(row.spotify_album_id, token = token)
+            try:
+                artist = sptfy.pullSpotifyArtist(row.spotify_artist_id, token = token)
+                album = sptfy.pullSpotifyAlbum(row.spotify_album_id, token = token)
+            except:
+                return artist_db
             gs = set(artist['genres'] + album['genres'])
             gs = [re.sub(r"[^a-zA-Z0-9]", '_', x) for x in gs]
             new_genres = set(gs).difference(set(flat_genres))

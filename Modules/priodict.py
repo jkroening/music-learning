@@ -22,7 +22,7 @@ until it is found by smallest() or until the heap is rebuilt.'''
 	def smallest(self):
 		'''Find smallest item after removing deleted items from front of heap.'''
 		if len(self) == 0:
-			raise IndexError, "smallest of empty priorityDictionary"
+			raise IndexError("smallest of empty priorityDictionary")
 		heap = self.__heap
 		while heap[0][1] not in self or self[heap[0][1]] != heap[0][0]:
 			lastItem = heap.pop()

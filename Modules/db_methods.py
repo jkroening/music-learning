@@ -82,14 +82,14 @@ def buildArtistDataFrame(song_db, artist_db, token = None):
                 for g in new_genres:
                     user_input = [None]
                     while not os.path.isfile("../Databases/genres/{}.txt".format(user_input[0])):
-                        user_input = raw_input(
+                        user_input = input(
                             '\nIn which genre group(s) does {} belong? [{}] (separate by space)\
                             \nelectronic \
                             \nindie \
                             \npop \
                             \npoprock \
                             \nrock \
-                            \nurban\n\n'.format(g, artist['artist'].encode('utf-8').strip())
+                            \nurban\n\n'.format(g, artist['artist'].strip())
                         ).split()
                     for ui in user_input:
                         with open("../Databases/genres/{}.txt".format(ui), "a") as f:

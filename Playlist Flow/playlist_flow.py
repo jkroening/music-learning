@@ -46,7 +46,7 @@ def main():
     # clusters2 = dam.classifyUnsupervised(X2, 3)
     # clusters1 = dam.classifyUnsupervised(X, 3)
 
-    method = raw_input(
+    method = input(
         "Which method: Start and end? Enter 'both'.\nJust start song? Enter 'start'. >> "
     )
 
@@ -78,10 +78,10 @@ def main():
                         paths.append(newpath)
             return paths
 
-        start_artist = raw_input('Enter artist name of song to start with: ')
-        start_title = raw_input('Enter title of song to start with: ')
-        end_artist = raw_input('Enter artist name of song to end with: ')
-        end_title = raw_input('Enter title of song to end with: ')
+        start_artist = input('Enter artist name of song to start with: ')
+        start_title = input('Enter title of song to start with: ')
+        end_artist = input('Enter artist name of song to end with: ')
+        end_title = input('Enter title of song to end with: ')
 
         df = db
         start = np.where((df.artist.str.lower() == start_artist.lower()) &
@@ -110,18 +110,18 @@ def main():
                 walk = np.concatenate([tsp[0:(mid)][::-1], tsp[(mid + 1):len(tsp)][::-1]])
             for w in walk:
                 if w == tsp[0]:
-                    print "----------------------------------------"
-                print "{} - {}".format(db.iloc[w, ].artist,
-                                           db.iloc[w, ].title)
+                    print("----------------------------------------")
+                print("{} - {}".format(db.iloc[w, ].artist,
+                                           db.iloc[w, ].title))
             print("\n")
             for w in walk:
-                print "spotify:track:{}".format(db.iloc[w, ].spotify_id)
+                print("spotify:track:{}".format(db.iloc[w, ].spotify_id))
                 f.write("spotify:track:%s\n" % w)
 
     if method == "start":
-        strategy = raw_input("Join songs by 'link' or by 'center'? ")
-        artist = raw_input('Enter artist name: ')
-        song = raw_input('Enter song name: ')
+        strategy = input("Join songs by 'link' or by 'center'? ")
+        artist = input('Enter artist name: ')
+        song = input('Enter song name: ')
 
         ## center means songs are sorted/ordered by proximity to centroid song
         if strategy == "center":
@@ -129,13 +129,13 @@ def main():
             ids = expanse.spotify_id.tolist()
             sptfy.writeIDsToURI(ids, "../output", "walk.txt")
             for i in ids:
-                print "{} - {}".format(
+                print("{} - {}".format(
                     db.artist.values[db.spotify_id.values == i][0],
                     db.title.values[db.spotify_id.values == i][0]
-                )
+                ))
             print("\n")
             for i in ids:
-                print "spotify:track:{}".format(i)
+                print("spotify:track:{}".format(i))
 
         ## link means songs are strung together finding the next closest song to
         ## the previously added node
@@ -143,17 +143,17 @@ def main():
             walk = dam.walkPoints(X.copy(), db, artist, song)
             hlpr.writeTextFile(walk, "../output", "walk.txt")
             for w in walk:
-                print "{} - {}".format(
+                print("{} - {}".format(
                     db.artist.values[
                         db.spotify_id.values == sptfy.stripSpotifyURI(w)
                     ][0],
                     db.title.values[
                         db.spotify_id.values == sptfy.stripSpotifyURI(w)
                     ][0]
-                )
+                ))
             print("\n")
             for w in walk:
-                print w
+                print(w)
 
         # cluster_groups1 = hlpr.separateMatrixClusters(X2, clusters1)
         # cluster_groups2 = hlpr.separateDataFrameClusters(db_subset, clusters2)
@@ -164,11 +164,11 @@ def main():
         # call(["subl", "output/walk.txt"])
 
     if len(unfound_tracks) > 0:
-        print "\nThese songs weren't found..."
-        print "Please add them back to your playlist manually:"
+        print("\nThese songs weren't found...")
+        print("Please add them back to your playlist manually:")
         for item in unfound_tracks:
-            print item.strip()
-        print "\n"
+            print(item.strip())
+        print("\n")
 
 
 if __name__ == "__main__":

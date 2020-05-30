@@ -108,12 +108,12 @@ def main():
         # print "\nSongs without Echonest data:"
         # print "(Similar songs cannot be calculated.)"
         # print unfound_tracks[["artist", "title"]], "\n"
-        # selection = int(raw_input('Select next song (enter number): '))
+        # selection = int(input('Select next song (enter number): '))
         # if selection in np.arange(j, k):
         #     ids.append(unfound_tracks.spotify_id[selection])
         #     unfound_tracks = unfound_tracks[unfound_tracks.index != selection]
         # while selection not in range(1, len(db) + 1):
-        #     selection = int(raw_input('Select next song (enter number): ')
+        #     selection = int(input('Select next song (enter number): ')
         # if selection in np.arange(1:len(neighbors)):
         #     next_song = neighbors[neighbors.index == selection]
         #     spotify_id = next_song.spotify_id.values[0]

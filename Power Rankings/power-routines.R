@@ -189,6 +189,8 @@ releaseSlug <- function(text) {
     text <- gsub("\\s", "", text)
     text <- gsub("\\:", "", text)
     text <- gsub("\\/", "", text)
+    text <- gsub("\\?", "", text)
+    text <- gsub("\\!", "", text)
     tolower(text)
 }
 
@@ -352,7 +354,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         entry$GENRE,
         pi,
         fire_rating,
-        TREND.NO,
+        if ("TREND" %in% names(entry)) entry$TREND else TREND.NO,
         stringsAsFactors = FALSE
     )
     if (!trend) old.entry <- old.entry[ , -8]

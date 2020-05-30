@@ -278,18 +278,20 @@ for (yt in year_types) {
             diffs <- cut2 - cut1
             d.diffs <- cbind(d.pre, diffs)
             for (i in 1:nrow(d.diffs)) {
-                if (is.na(diffs[i]))
+                if (is.na(diffs[i])) {
                     trend <- TREND.NEW
-                else if (diffs[i] == 0)
+                } else if (diffs[i] == 0) {
                     trend <- TREND.NO
-                else if (diffs[i] < 0)
+                } else if (diffs[i] < 0) {
                     trend <- TREND.DN
-                else if (diffs[i] > 0)
+                } else if (diffs[i] > 0) {
                     trend <- TREND.UP
+                }
                 matched <- which(d.sorted$ARTIST == d.pre$ARTIST[[i]] &
                                  d.sorted$X == d.pre$X[[i]])
-                if (d.sorted$TREND[[matched]] == "_update_")
+                if (d.sorted$TREND[[matched]] == "_update_") {
                     d.sorted$TREND[[matched]] <- trend
+                }
             }
         } else {
             keep <- d.sorted$TREND != "_update_" &

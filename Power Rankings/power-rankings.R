@@ -147,20 +147,38 @@ for (yt in year_types) {
     for (release in unique(d.add$Album)) {
         rel <- d.add[d.add$Album == release, ]
         pi <- powerIndex(rel)
-        if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
-            cat(
-                rel$Artist[1],
-                file = paste0("output/follow.txt"),
-                append = TRUE,
-                sep = "\n"
-            )
+        if (type == "ALBUM") {
+            if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+                cat(
+                    rel$Artist[1],
+                    file = paste0("output/follow.txt"),
+                    append = TRUE,
+                    sep = "\n"
+                )
+            } else {
+                cat(
+                    rel$Artist[1],
+                    file = paste0("output/unfollow.txt"),
+                    append = TRUE,
+                    sep = "\n"
+                )
+            }
         } else {
-            cat(
-                rel$Artist[1],
-                file = paste0("output/unfollow.txt"),
-                append = TRUE,
-                sep = "\n"
-            )
+            if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+                cat(
+                    rel$Artist[1],
+                    file = paste0("output/follow.txt"),
+                    append = TRUE,
+                    sep = "\n"
+                )
+            } else if (pi < 40.0 || (!any(rel$My.Rating > 40) && pi < 60.0)) {
+                cat(
+                    rel$Artist[1],
+                    file = paste0("output/unfollow.txt"),
+                    append = TRUE,
+                    sep = "\n"
+                )
+            }
         }
     }
 

@@ -570,6 +570,10 @@ parseGenre <- function(genre) {
     }
     if (grepl("^[Pop : ]", genre)) {
         return("Pop")
+    } else if (grepl("^[Classical : ]", genre)) {
+        return("Classical")
+    } else if (genre == "Electronic : Experimental") {
+        return("Electronic")
     } else {
         return(strsplit(genre, " : ")[[1]][2])
     }

@@ -54,7 +54,7 @@ yrs <- d %>%
 if (any(yrs$yrs > 1)) {
     cat(paste0("The following releases have more than one year denoted across ",
                "the tracks:\n\n"))
-    print(yrs[ , c("Artist", "Album")], row.names = FALSE)
+    print(yrs[yrs$yrs > 1, c("Artist", "Album")], row.names = FALSE)
     cat("\n")
     stop("Fix the Year tag and try again.", call. = FALSE)
 }
@@ -137,11 +137,11 @@ for (yt in year_types) {
     if (length(pre) > 0) {
         d.pre <- read.csv(file.path("input", pre), stringsAsFactors = FALSE,
                           encoding = "windows-1252", sep = "\t")
-        d.pre$POWER.br.INDEX <- as.numeric(gsub(
+        d.pre$POWER.br.INDEX <- as.numeric(gsub(" ", "", gsub(
             "<span id='pilarge'>|</span><span id='pismall'>|</span>",
             "",
             d.pre$POWER.br.INDEX
-        ))
+        )))
     }
 
     for (release in unique(d.add$Album)) {

@@ -565,6 +565,9 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
 }
 
 parseGenre <- function(genre) {
+    if (grepl("[", genre)) {
+        genre <- gsub(" \\[.*", "", genre)
+    }
     if (!grepl(" : ", genre)) {
         return(genre)
     }

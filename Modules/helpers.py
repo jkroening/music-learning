@@ -105,7 +105,7 @@ def chooseTrack(db, songs, missings, ids, playlist, artist, title, song, i, quer
     pd.set_option('display.max_rows', 100)
     if not songs.empty:
         songs.index = np.arange(1, len(songs) + 1)
-        print("\n", songs[["title", "artist"]], "\n")
+        print("\n", songs[["title", "artist"]].to_string(), "\n")
     else:
         print("")
     if len(missings) > 0:

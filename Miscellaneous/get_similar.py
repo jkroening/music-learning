@@ -11,6 +11,7 @@ sys.path.append( "../Modules")
 import spotify_methods as sp
 import data_methods as dam
 import helpers as hlpr
+import pandas as pd
 
 
 def main():
@@ -31,11 +32,22 @@ def main():
                                fillNA = True, centerScale = True)
 
     ## create directed walk starting at song from sys args
-    artist = raw_input('Enter artist name: ')
-    song = raw_input('Enter song name: ')
+    artist = input('Enter artist name: ')
+    song = input('Enter song name: ')
+    n = int(input('How many similar songs? '))
 
-    neighbors = dam.getSimilarPoints(X.copy(), db, artist, song, 10)
-    print neighbors
+    neighbors = dam.getSimilarPoints(X.copy(), db, artist, song, n, stdout = False)
+
+    track_uris = [
+        "spotify:track:{}".format(x[1]['spotify_id']).rstrip() \
+        if len(x[1]['spotify_id']) < 36 else x[1]['spotify_id'].rstrip() \
+        for x in neighbors.iterrows()
+    ]
+
+    pd.set_option('display.max_rows', None)
+    print(neighbors[['artist', 'title']])
+    print("")
+    print("\n".join(track_uris))
 
 
 if __name__ == "__main__":

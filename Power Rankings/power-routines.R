@@ -288,7 +288,7 @@ matchPossibilities <- function(string) {
 }
 
 ## add new entries to previous power rankings, using static vars
-parseRankings <- function(i, df, year, type) {
+parseRankings <- function(i, df, year, type, follow, config) {
     cat("\n")
     artist <- df$ARTIST[[i]]
     print(artist)
@@ -304,16 +304,19 @@ parseRankings <- function(i, df, year, type) {
     }
     if (!nchar(df$X[[i]])) {
         out <- findEntry(artists, df[i, ], year, type,
-                         trend = "TREND" %in% names(df))
+                         trend = "TREND" %in% names(df), follow = follow,
+                         config = config)
     } else {
         out <- findEntry(artists, df[i, ], year, type,
-                         trend = "TREND" %in% names(df), updateOnly = TRUE)
+                         trend = "TREND" %in% names(df), updateOnly = TRUE,
+                         follow = follow, config = config)
     }
     return(out)
 }
 
 findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
-                      updateOnly = FALSE, artistIter = 1, trend = TRUE) {
+                      updateOnly = FALSE, artistIter = 1, trend = TRUE,
+                      follow, config) {
     artist <- entry$ARTIST
     release <- entry[[type]]
     release.trunc <- releaseSlug(release)
@@ -331,7 +334,8 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         pi <- entry$POWER.br.INDEX
     } else {
         print(entry$POWER.br.INDEX)
-        stop("Something is wrong with this entry's POWER.br.INDEX.", call. = FALSE)
+        stop("Something is wrong with this entry's POWER.br.INDEX.",
+             call. = FALSE)
     }
     if (!is.na(suppressWarnings(as.numeric(entry$RATING)))) {
         fire_rating <- paste(
@@ -385,7 +389,9 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
             type,
             firstAttempt = FALSE,
             updateOnly = updateOnly,
-            trend = trend
+            trend = trend,
+            follow = follow,
+            config = config
         ))
     } else if (is.null(artist.id) && artistIter == 1) {
         print(release)
@@ -398,6 +404,11 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                 paste0("Artist '", artist,
                        "' not found. You will need to complete ",
                        "the entry manually."),
+                call. = FALSE,
+                immediate. = TRUE
+            )
+            warning(
+                paste0("Also manually ", follow, " the artist."),
                 call. = FALSE,
                 immediate. = TRUE
             )
@@ -430,6 +441,11 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                 paste0("Release '", release,
                        "' not found. You will need to complete ",
                        "the entry manually."),
+                call. = FALSE,
+                immediate. = TRUE
+            )
+            warning(
+                paste0("Also manually ", follow, " the artist."),
                 call. = FALSE,
                 immediate. = TRUE
             )
@@ -531,6 +547,9 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                         append = TRUE,
                         sep = "\n"
                     )
+                    if (length(follow)) {
+                        updateFollowing(artist.id, follow, config)
+                    }
                     if (updateOnly) return(old.entry)
                     new.entry <- data.frame(
                         entry$RANK,
@@ -560,12 +579,14 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         firstAttempt,
         updateOnly,
         artistIter = artistIter + 1,
-        trend = trend
+        trend = trend,
+        follow = follow,
+        config = config
     ))
 }
 
 parseGenre <- function(genre) {
-    if (grepl("[", genre)) {
+    if (grepl("\\[", genre)) {
         genre <- gsub(" \\[.*", "", genre)
     }
     if (!grepl(" : ", genre)) {
@@ -579,5 +600,23 @@ parseGenre <- function(genre) {
         return("Electronic")
     } else {
         return(strsplit(genre, " : ")[[1]][2])
+    }
+}
+
+updateFollowing <- function(artist.id, follow, config) {
+    reticulate::use_python("/usr/local/bin/python3")
+    spotipy <- reticulate::import("spotipy")
+    spauth <- spotipy$SpotifyOAuth(
+        client_id <- config[["SPOTIFY_CLIENT_ID"]],
+        client_secret <- config[["SPOTIFY_CLIENT_SECRET"]],
+        redirect_uri = config[["SPOTIFY_REDIRECT_URI"]],
+        scope = config[["SPOTIFY_SCOPE"]],
+        username = config[["SPOTIFY_USERNAME"]]
+    )
+    sp <- spotipy$Spotify(auth_manager = spauth)
+    if (follow) {
+        sp$user_follow_artists(list(artist.id))
+    } else {
+        sp$user_unfollow_artists(list(artist.id))
     }
 }

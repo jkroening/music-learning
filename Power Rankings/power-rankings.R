@@ -144,11 +144,13 @@ for (yt in year_types) {
         )))
     }
 
+    follow <- data.frame()
     for (release in unique(d.add$Album)) {
         rel <- d.add[d.add$Album == release, ]
         pi <- powerIndex(rel)
         if (type == "ALBUM") {
             if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+                follow.bool <- TRUE
                 cat(
                     rel$Artist[1],
                     file = paste0("output/follow.txt"),
@@ -156,6 +158,7 @@ for (yt in year_types) {
                     sep = "\n"
                 )
             } else {
+                follow.bool <- FALSE
                 cat(
                     rel$Artist[1],
                     file = paste0("output/unfollow.txt"),
@@ -165,6 +168,7 @@ for (yt in year_types) {
             }
         } else {
             if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+                follow.bool <- TRUE
                 cat(
                     rel$Artist[1],
                     file = paste0("output/follow.txt"),
@@ -172,6 +176,7 @@ for (yt in year_types) {
                     sep = "\n"
                 )
             } else if (pi < 40.0 || (!any(rel$My.Rating > 40) && pi < 60.0)) {
+                follow.bool <- FALSE
                 cat(
                     rel$Artist[1],
                     file = paste0("output/unfollow.txt"),
@@ -180,6 +185,14 @@ for (yt in year_types) {
                 )
             }
         }
+        follow <- rbind(
+            follow,
+            data.frame(
+                Artist = rel$Artist[1],
+                Album = release,
+                follow.bool = follow.bool
+            )
+        )
     }
 
     ## power index and rating
@@ -335,10 +348,16 @@ for (yt in year_types) {
     Sys.setenv(SPOTIFY_CLIENT_SECRET = SPOTIFY_CLIENT_SECRET)
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     assign('access_token', SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
-
+    config.list <- stats::setNames(config[[2]], config[[1]])
+    print(follow)
+    print(config.list)
     ## parser
     res <- lapply(1:nrow(d.sorted), function(i) {
-        parseRankings(i, d.sorted, year, type)
+        fllw <- follow$follow.bool[
+            follow$Artist == d.sorted[i, "ARTIST"] &
+            follow$Album == d.sorted[i, type]
+        ]
+        parseRankings(i, d.sorted, year, type, fllw, config.list)
     })
     d.out <- data.frame(
         do.call(rbind, res),

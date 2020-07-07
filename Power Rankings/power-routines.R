@@ -607,8 +607,8 @@ updateFollowing <- function(artist.id, follow, config) {
     reticulate::use_python("/usr/local/bin/python3")
     spotipy <- reticulate::import("spotipy")
     spauth <- spotipy$SpotifyOAuth(
-        client_id <- config[["SPOTIFY_CLIENT_ID"]],
-        client_secret <- config[["SPOTIFY_CLIENT_SECRET"]],
+        client_id = config[["SPOTIFY_CLIENT_ID"]],
+        client_secret = config[["SPOTIFY_CLIENT_SECRET"]],
         redirect_uri = config[["SPOTIFY_REDIRECT_URI"]],
         scope = config[["SPOTIFY_SCOPE"]],
         username = config[["SPOTIFY_USERNAME"]]

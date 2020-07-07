@@ -55,7 +55,7 @@ def buildArtistDict(tracks):
         artists[r['artist_id']] = {'artist' : r['artist_name']}
     return artists
 
-def buildArtistDataFrame(song_db, artist_db, token = None):
+def buildArtistDataFrame(song_db, artist_db, token = None, sptpy = None):
     for i, row in song_db.iterrows():
         ## also check if no subgenres are marked (ie. all are zero) and if so
         ## check again
@@ -70,8 +70,8 @@ def buildArtistDataFrame(song_db, artist_db, token = None):
             genres_sum = sum(match_subset)
         if genres_sum == 0:
             try:
-                artist = sptfy.pullSpotifyArtist(row.spotify_artist_id, token = token)
-                album = sptfy.pullSpotifyAlbum(row.spotify_album_id, token = token)
+                artist = sptfy.pullSpotifyArtist(row.spotify_artist_id, token = token, sptpy = sptpy)
+                album = sptfy.pullSpotifyAlbum(row.spotify_album_id, token = token, sptpy = sptpy)
             except:
                 return artist_db
             gs = set(artist['genres'] + album['genres'])

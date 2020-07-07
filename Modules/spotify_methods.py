@@ -25,11 +25,11 @@ with open("../config/config.csv", "U") as f:
     for row in reader:
         config[row[0]] = row[1]
 
-SPOTIPY_USERNAME = config['username']
+SPOTIPY_USERNAME = config['SPOTIFY_USERNAME']
 SPOTIPY_CLIENT_ID = config['SPOTIFY_CLIENT_ID']
 SPOTIPY_CLIENT_SECRET = config['SPOTIFY_CLIENT_SECRET']
 SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
-SPOTIPY_SCOPE = 'user-library-read'
+SPOTIPY_SCOPE = config['SPOTIFY_SCOPE']
 
 # os.environ['SPOTIPY_USERNAME'] = config['username']
 # os.environ['SPOTIPY_CLIENT_ID'] = SPOTIPY_CLIENT_ID
@@ -37,7 +37,7 @@ SPOTIPY_SCOPE = 'user-library-read'
 # os.environ['SPOTIPY_REDIRECT_URI'] = SPOTIPY_REDIRECT_URI
 # os.environ['SPOTIPY_SCOPE'] = 'user-library-read'
 
-def authSpotipy():
+def authSpotipy(SPOTIPY_CLIENT_ID = None, SPOTIPY_CLIENT_SECRET = None):
 
     auth = oauth2.SpotifyClientCredentials(
         client_id = SPOTIPY_CLIENT_ID,
@@ -64,18 +64,35 @@ def authSpotipy():
 
     # return sp
 
-def getSpotifyCred(username, config):
-    SPOTIPY_CLIENT_ID = config['SPOTIFY_APP_ID']
-    SPOTIPY_CLIENT_SECRET = config['SPOTIFY_APP_SECRET']
+def getSpotifyCred():
+    with open("../config/config.csv", "U") as f:
+        reader = csv.reader(f)
+        config = {}
+        for row in reader:
+            config[row[0]] = row[1]
+
+    SPOTIPY_USERNAME = config['SPOTIFY_USERNAME']
+    SPOTIPY_CLIENT_ID = config['SPOTIFY_CLIENT_ID']
+    SPOTIPY_CLIENT_SECRET = config['SPOTIFY_CLIENT_SECRET']
     SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
-    scope = 'user-library-read'
-    token = util.prompt_for_user_token(username, scope, SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
-    print(token)
-    if token:
-        sp = spotipy.Spotify(auth = token)
-        return sp
-    else:
-        print("Can't get token for", username)
+    SPOTIPY_SCOPE = config['SPOTIFY_SCOPE']
+    # token = util.prompt_for_user_token(username, SPOTIPY_SCOPE, SPOTIPY_CLIENT_ID,
+    #                                    SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+    # print(token)
+    spauth = spotipy.SpotifyOAuth(
+        client_id = SPOTIPY_CLIENT_ID,
+        client_secret = SPOTIPY_CLIENT_SECRET,
+        redirect_uri = SPOTIPY_REDIRECT_URI,
+        scope = SPOTIPY_SCOPE,
+        username = SPOTIPY_USERNAME
+    )
+    sp = spotipy.Spotify(auth_manager = spauth)
+    return(sp)
+    # if token:
+    #     sp = spotipy.Spotify(auth = token)
+    #     return sp
+    # else:
+    #     print("Can't get token for", username)
 
 def retrySpotipy(func):
     # token = util.prompt_for_user_token(
@@ -123,13 +140,14 @@ def getSpotifyAlbumIDs(text):
     return album_id, spotify_uri
 
 @retrySpotipy
-def getAudioFeatures(tracks, token, silent = False):
-    sptpy = spotipy.Spotify(auth = token)
+def getAudioFeatures(tracks, token = None, silent = False, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     out = []
 
     if isinstance(tracks, str) and not re.search('local', tracks[0]):
         data = sptpy.audio_features([tracks])
-        out = parseAudioFeatures(data[0], tracks, silent, token = token)
+        out = parseAudioFeatures(data[0], tracks, silent, token = token, sptpy = sptpy)
     elif len(tracks) > 50:
         chunks = mhlpr.chunker(tracks, 50)
         for chunk in chunks:
@@ -138,23 +156,25 @@ def getAudioFeatures(tracks, token, silent = False):
                 tracks = ["" if re.search('local', x) else x for x in chunk]
             )
             for d, c in zip(data, chunk):
-                out.append(parseAudioFeatures(d, c, silent, token = token))
+                out.append(parseAudioFeatures(d, c, silent, token = token, sptpy = sptpy))
     else:
         ## don't try local tracks
         data = sptpy.audio_features(
             tracks = ["" if re.search('local', x) else x for x in tracks]
         )
         for d, t in zip(data, tracks):
-            out.append(parseAudioFeatures(d, t, silent, token = token))
+            out.append(parseAudioFeatures(d, t, silent, token = token, sptpy = sptpy))
     return out
 
-def getArtistGenres(artist_id, token):
-    sptpy = spotipy.Spotify(auth = token)
+def getArtistGenres(artist_id, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     return sptpy.artist(artist_id)['genres']
 
 @retrySpotipy
-def getArtistsGenres(artists, token):
-    sptpy = spotipy.Spotify(auth = token)
+def getArtistsGenres(artists, token = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     out = []
 
     if isinstance(artists, str):
@@ -167,14 +187,14 @@ def getArtistsGenres(artists, token):
                 artists = ["" if re.search('local', x) else x for x in chunk]
             )
             for d, c in zip(data, chunk):
-                out.append(parseAudioFeatures(d, c, token = token))
+                out.append(parseAudioFeatures(d, c, token = token, sptpy = sptpy))
     else:
         ## don't try local tracks
         data = sptpy.audio_features(
             tracks = ["" if re.search('local', x) else x for x in tracks]
         )
         for d, t in zip(data, tracks):
-            out.append(parseAudioFeatures(d, t, token = token))
+            out.append(parseAudioFeatures(d, t, token = token, sptpy = sptpy))
 
     return out
 
@@ -183,16 +203,16 @@ def parseGenres(artist, uri):
     if artist is not None:
         1 == 1
 
-def parseAudioFeatures(song, uri, silent = False, token = None):
+def parseAudioFeatures(song, uri, silent = False, token = None, sptpy = None):
     ## if response is a success
     if song is not None:
-        track = pullSpotifyTrack(stripSpotifyURI(song['uri']), token = token)
+        track = pullSpotifyTrack(stripSpotifyURI(song['uri']), token = token, sptpy = sptpy)
         song['artist'] = track['artist']
         song['title'] = track['title']
         song['album'] = track['album']
         song['spotify_artist_id'] = track['spotify_artist_id']
         song['spotify_album_id'] = track['spotify_album_id']
-        album = pullSpotifyAlbum(song['spotify_album_id'], token = token)
+        album = pullSpotifyAlbum(song['spotify_album_id'], token = token, sptpy = sptpy)
         song['release_date'] = album['release_date']
         song['year'] = float(album['year'])
         song['duration'] = song.pop('duration_ms') / 1000.0
@@ -207,8 +227,9 @@ def parseAudioFeatures(song, uri, silent = False, token = None):
         print("Song audio features not found: {}".format(uri))
     return song
 
-def pullSpotifyTrack(track_id, token = None):
-    sptpy = spotipy.Spotify(auth = token)
+def pullSpotifyTrack(track_id, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     data = sptpy.track(track_id.strip())
     song = unidecode(data['name'])
     album = unidecode(data['album']['name'])
@@ -222,7 +243,7 @@ def pullSpotifyTrack(track_id, token = None):
     track_data = {'title' : song, 'album' : album, 'spotify_id' : track_id.strip(), 'artist' : artist, 'spotify_artist_id' : artist_id, 'spotify_album_id' : album_id, 'popularity' : data['popularity'], 'secondary_artist' : secondary_artist}
     return track_data
 
-def pullSpotifyTracks(location, filename, tracks = [], local_tracks = [], album_info = False, token = None):
+def pullSpotifyTracks(location, filename, tracks = [], local_tracks = [], album_info = False, token = None, sptpy = None):
     ## load tracks in playlist
     in_tracks = hlpr.loadFile(location, filename)
     for track in in_tracks:
@@ -230,16 +251,17 @@ def pullSpotifyTracks(location, filename, tracks = [], local_tracks = [], album_
             local_tracks.append(track)
             continue
         track_id = stripSpotifyLink(track)
-        track_data = pullSpotifyTrack(track_id, token = token)
+        track_data = pullSpotifyTrack(track_id, token = token, sptpy = sptpy)
         if album_info:
-            album_data = pullSpotifyAlbum(track_data['spotify_album_id'], token = token)
+            album_data = pullSpotifyAlbum(track_data['spotify_album_id'], token = token, sptpy = sptpy)
             track_data['release_date'] = album_data['release_date']
             track_data['year'] = album_data['year']
         tracks.append(track_data)
     return tracks, local_tracks
 
-def pullSpotifyArtist(artist_id, token = None):
-    sptpy = spotipy.Spotify(auth = token)
+def pullSpotifyArtist(artist_id, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     data = sptpy.artist(artist_id.strip())
     genres = data['genres']
     name = data['name']
@@ -247,8 +269,9 @@ def pullSpotifyArtist(artist_id, token = None):
     artist_data = {'artist' : name, 'spotify_artist_id' : artist_id, 'genres' : genres, 'artist_popularity' : popularity}
     return artist_data
 
-def pullSpotifyAlbum(album_id, token = None):
-    sptpy = spotipy.Spotify(auth = token)
+def pullSpotifyAlbum(album_id, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     data = sptpy.album(album_id.strip())
     album_name = unidecode(data['name'])
     artist = unidecode(data['artists'][0]['name'])
@@ -262,8 +285,9 @@ def pullSpotifyAlbum(album_id, token = None):
     return album_data
 
 @retrySpotipy
-def searchSpotifyTrack(artist, title, album = None, first = False, token = None):
-    sptpy = spotipy.Spotify(auth = token)
+def searchSpotifyTrack(artist, title, album = None, first = False, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
     data = sptpy.search(q = "%s %s %s" % (artist, title, album), limit = 50, type = 'track')
 
     tracks = []
@@ -374,3 +398,13 @@ def searchUserPlaylists(sp, user, tracks):
                     # print(tracks[1])
                     print("\n" + playlist['name'])
                     print("Track #%s" % (t[0] + 1))
+
+def followArtist(artists, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
+    sptpy.user_follow_artists(artists)
+
+def unfollowArtist(artists, token = None, sptpy = None):
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
+    sptpy.user_unfollow_artists(artists)

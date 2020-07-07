@@ -176,6 +176,7 @@ def processInput(terms = False, genres = False, input_playlist = None):
         token = sptfy.authSpotipy()
     except:
         token = None
+    sptpy = sptfy.getSpotifyCred()
 
     ## load tracks in playlist
     if input_playlist is not None:
@@ -200,11 +201,12 @@ def processInput(terms = False, genres = False, input_playlist = None):
                 title,
                 album,
                 first = True,
-                token = token
+                token = token,
+                sptpy = sptpy
             )
             if song_uri is not None:
                 if not dbm.lookupSongBySpotifyID(song_uri, song_db):
-                    song = sptfy.getAudioFeatures(song_uri, token = token)
+                    song = sptfy.getAudioFeatures(song_uri, token = token, sptpy = sptpy)
                     if song is not None:
                         song_db = song_db.append(song, ignore_index = True)
             else:
@@ -212,7 +214,7 @@ def processInput(terms = False, genres = False, input_playlist = None):
                 unfound_tracks.append(track)
         else:
             if not dbm.lookupSongBySpotifyID(track, song_db):
-                song = sptfy.getAudioFeatures(track, token = token)
+                song = sptfy.getAudioFeatures(track, token = token, sptpy = sptpy)
                 if song is not None:
                     song_db = song_db.append(song, ignore_index = True)
                 else:
@@ -229,7 +231,8 @@ def processInput(terms = False, genres = False, input_playlist = None):
         artist_db = dbm.buildArtistDataFrame(
             db_subset,
             artist_db,
-            token = token
+            token = token,
+            sptpy = sptpy
         )
         dbm.saveDataFrame(artist_db, "../Databases", "artist_db.csv")
 
@@ -244,14 +247,14 @@ def processInput(terms = False, genres = False, input_playlist = None):
     return db_out, unfound_tracks
 
 def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
-               token, makePlaylists = False):
+               token = None, sptpy = None, makePlaylists = False):
     ## we load the genres inside the function because they can be appended to
     ## below if a new genre presents itself for classification
     genre_db = dbm.buildSubgenres()
     for k, v in genre_db.items():
         genre_db[k] = mhlpr.flattenDictCustom(v).keys()
     all_genres = [v for k, v in genre_db.items() for v in genre_db[k]]
-    genres = sptfy.getArtistGenres(artist_id, token = token)
+    genres = sptfy.getArtistGenres(artist_id, token = token, sptpy = sptpy)
     electronic = genre_db['electronic']
     indie = genre_db['indie']
     pop = genre_db['pop']
@@ -314,7 +317,7 @@ def sortGenres(artist_name, artist_id, track_name, track_id, secondary_artist,
             maxes = [k for k, v in scores.items() if v == max(scores.values())]
         if secondary_artist is not None and len(maxes) > 0 and 'pop' not in maxes:
             ## use featuring artist genres too
-            genres = genres + sptfy.getArtistGenres(secondary_artist, token = token)
+            genres = genres + sptfy.getArtistGenres(secondary_artist, token = token, sptpy = sptpy)
             e, i, p, o, u, r = [0] * 6
             for g in genres:
                 g = re.sub(r"[^a-zA-Z0-9]", '_', g)

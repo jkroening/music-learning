@@ -22,14 +22,20 @@ def main(ags, explicit = False):
     local_tracks = []
 
     config = loadFile("../config", "config.csv", True)
-    token = sptfy.authSpotipy()
+    try:
+        token = sptfy.authSpotipy()
+    except:
+        token = None
+    sptpy = sptfy.getSpotifyCred()
 
-    cleans, local_tracks = sptfy.pullSpotifyTracks('../input', 'cleans.txt', token = token)
+    cleans, local_tracks = sptfy.pullSpotifyTracks(
+        '../input', 'cleans.txt', sptpy = sptpy
+    )
     explicits, local_tracks = sptfy.pullSpotifyTracks(
-          '../input', 'explicits.txt'
-        , tracks = explicits
-        , local_tracks = local_tracks
-        , token = token
+          '../input', 'explicits.txt',
+        tracks = explicits,
+        local_tracks = local_tracks,
+        sptpy = sptpy
     )
 
     if explicit:

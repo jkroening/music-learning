@@ -349,8 +349,7 @@ for (yt in year_types) {
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     assign('access_token', SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
     config.list <- stats::setNames(config[[2]], config[[1]])
-    print(follow)
-    print(config.list)
+
     ## parser
     res <- lapply(1:nrow(d.sorted), function(i) {
         fllw <- follow$follow.bool[

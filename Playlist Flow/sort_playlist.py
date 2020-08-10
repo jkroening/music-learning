@@ -16,6 +16,14 @@ import spotify_methods as sptfy
 
 def main():
 
+    ## set spotify auth
+    config = hlpr.loadFile("../config", "config.csv", True)
+    try:
+        token = sptfy.authSpotipy()
+    except:
+        token = None
+    sptpy = sptfy.getSpotifyCred()
+
     ## which feature to sort on
     sort_col1 = input(
         "\nEnter one of the following features to sort on: \
@@ -57,13 +65,10 @@ def main():
         ascending2 = 1
     print("")
 
-    config = hlpr.loadFile("../config", "config.csv", True)
-    token = sptfy.authSpotipy()
-
     if "popularity" in [sort_col1, sort_col2]:
         db, unfound_tracks = sptfy.pullSpotifyTracks('../input',
                                                      'input.txt',
-                                                     token = token)
+                                                     sptpy = sptpy)
         df = pd.DataFrame.from_dict(db)
         db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
         db = db.merge(df[["spotify_id", "popularity"]], on = "spotify_id")

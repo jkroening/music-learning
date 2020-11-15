@@ -43,13 +43,9 @@ def main():
         sort_col2 = None
         ascending2 = 1
 
-    config = hlpr.loadFile("../config", "config.csv", True)
-    token = sptfy.authSpotipy()
-
     if "popularity" in [sort_col1, sort_col2]:
         db, unfound_tracks = sptfy.pullSpotifyTracks('../input',
-                                                     'input.txt',
-                                                     token = token)
+                                                     'input.txt')
         df = pd.DataFrame.from_dict(db)
         db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
         db = db.merge(df[["spotify_id", "popularity"]], on = "spotify_id")

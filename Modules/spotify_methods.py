@@ -244,6 +244,11 @@ def pullSpotifyTrack(track_id, token = None, sptpy = None):
     return track_data
 
 def pullSpotifyTracks(location, filename, tracks = [], local_tracks = [], album_info = False, token = None, sptpy = None):
+    ## set spotify auth
+    config = hlpr.loadFile("../config", "config.csv", True)
+    if token is not None:
+        sptpy = spotipy.Spotify(auth = token)
+    sptpy = getSpotifyCred()
     ## load tracks in playlist
     in_tracks = hlpr.loadFile(location, filename)
     for track in in_tracks:

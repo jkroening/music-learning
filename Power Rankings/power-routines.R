@@ -27,13 +27,13 @@ getShorty <- function(vec) {
 }
 isOverlap <- function(vec) {
     x <- strsplit(vec, " |\\, ")
-    overlap <- all(vapply(seq_along(x), function(i) {
+    overlap <- sum(vapply(seq_along(x), function(i) {
         return(any(vapply(
             Vectorize(intersect)(x[i], x[!seq_along(x) %in% i]),
             length,
             numeric(1)
         ) > 0))
-    }, logical(1)))
+    }, logical(1))) > (length(vec) / 2)
     return(overlap)
 }
 isNearComplete <- function(vec) {
@@ -80,7 +80,7 @@ powerMath <- function(ratings) {
     mean_album <- mean(ratings)
     ## calculate standard deviation of ratings
     stddev <- sd(ratings)
-    if (stddev == 0) {
+    if (isTRUE(stddev == 0)) {
         ## this is a standard deviation barely over 0 (as in, all ratings are
         ## the same except for one song being offset by 1)
         stddev <- 0.25
@@ -199,25 +199,34 @@ getter <- function(url, query, ...) {
     if (status_code(response) == 429) print("Too many requests. Waiting...")
 }
 
-getTopSong <- function(album, access_token, year, type) {
+getTopSong <- function(artist, album, access_token, year, type) {
     if (grepl('open.spotify.com', album)) {
         album <- gsub('(.*album/)|(\\?.*|\'.*)', '', album)
     }
-    tracks <- spotifyr::get_album_tracks(album, authorization = access_token)
-    tracks <- spotifyr::get_tracks(tracks$id)
-    track <- tracks[
-        intersect(grep("US", tracks$available_markets), which.max(tracks$popularity)),
-        "uri"
-    ]
-    cat(
-        track,
-        file = paste0(
-            "output/", year, "_", type,
-            "_spotify_playlist.txt"
-        ),
-        append = TRUE,
-        sep = "\n"
-    )
+    tryCatch({
+        tracks <- spotifyr::get_album_tracks(
+            album, authorization = access_token
+        )
+        tracks <- spotifyr::get_tracks(tracks$id)
+        track <- tracks[
+            intersect(
+                grep("US", tracks$available_markets), 
+                which.max(tracks$popularity)
+            ),
+            "uri"
+        ]
+        cat(
+            track,
+            file = paste0(
+                "output/", year, "_", type,
+                "_spotify_playlist.txt"
+            ),
+            append = TRUE,
+            sep = "\n"
+        )
+    }, error = function(e) {
+        manualURI(artist, album, year, type)
+    })
 }
 
 manualURI <- function(artist, release, year, type, curr_URI = NULL) {
@@ -398,7 +407,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         if (nchar(entry$X) > 0) {
             ## if not a new entry, use previous X
             x <- entry$X
-            getTopSong(x, access_token, year, type)
+            getTopSong(artist, x, access_token, year, type)
         } else {
             warning(
                 paste0("Artist '", artist,
@@ -435,7 +444,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         if (nchar(entry$X) > 0) {
             ## if not a new entry, use previous X
             x <- entry$X
-            getTopSong(x, access_token, year, type)
+            getTopSong(artist, x, access_token, year, type)
         } else {
             warning(
                 paste0("Release '", release,
@@ -488,9 +497,13 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
             }))
             if (release.iter %in% possibilities || poss) {
                 release.id <- releases$id[k]
-                tracks <- spotifyr:::get_album_tracks(
-                    release.id, authorization = access_token
-                )
+                tryCatch({
+                    tracks <- spotifyr:::get_album_tracks(
+                        release.id, authorization = access_token
+                    )
+                }, error = function(e) {
+                    tracks <<- NULL
+                })
                 if (length(tracks$track_number) < 3) ## it's a single
                     next
                 if ("US" %in% unlist(tracks$available_markets)) {

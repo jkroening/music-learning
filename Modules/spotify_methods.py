@@ -76,17 +76,24 @@ def getSpotifyCred():
     SPOTIPY_CLIENT_SECRET = config['SPOTIFY_CLIENT_SECRET']
     SPOTIPY_REDIRECT_URI = config['SPOTIFY_REDIRECT_URI']
     SPOTIPY_SCOPE = config['SPOTIFY_SCOPE']
-    # token = util.prompt_for_user_token(username, SPOTIPY_SCOPE, SPOTIPY_CLIENT_ID,
+    ## token = util.prompt_for_user_token(SPOTIPY_USERNAME, SPOTIPY_SCOPE, SPOTIPY_CLIENT_ID,
     #                                    SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
-    # print(token)
-    spauth = spotipy.SpotifyOAuth(
+    ## print(token)
+    # spauth = spotipy.SpotifyOAuth(
+    #     client_id = SPOTIPY_CLIENT_ID,
+    #     client_secret = SPOTIPY_CLIENT_SECRET,
+    #     redirect_uri = SPOTIPY_REDIRECT_URI,
+    #     scope = SPOTIPY_SCOPE,
+    #     username = SPOTIPY_USERNAME
+    # )
+    # sp = spotipy.Spotify(auth_manager = spauth)
+
+    auth = oauth2.SpotifyClientCredentials(
         client_id = SPOTIPY_CLIENT_ID,
-        client_secret = SPOTIPY_CLIENT_SECRET,
-        redirect_uri = SPOTIPY_REDIRECT_URI,
-        scope = SPOTIPY_SCOPE,
-        username = SPOTIPY_USERNAME
+        client_secret = SPOTIPY_CLIENT_SECRET
     )
-    sp = spotipy.Spotify(auth_manager = spauth)
+    sp = spotipy.Spotify(client_credentials_manager = auth)
+
     return(sp)
     # if token:
     #     sp = spotipy.Spotify(auth = token)

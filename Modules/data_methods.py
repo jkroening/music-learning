@@ -89,7 +89,7 @@ def walkPoints(X, df, artist, title):
     curr_point = X[start, : ].copy()
     ## once the point has been touched, make the value impossiblly far away
     X[start, : ] = np.repeat(10e9, X.shape[1])
-    for i in xrange(X.shape[0] - 1):
+    for i in range(X.shape[0] - 1):
         nxt = closest(X, curr_point)
         next_point = X[nxt, : ].copy()
         if 'local' in df.iloc[nxt].spotify_id:

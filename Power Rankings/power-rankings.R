@@ -74,7 +74,12 @@ if (any(check_lps$invalid)) {
     print(check_lps[check_lps$invalid, c("Artist", "Album")],
           row.names = FALSE)
     cat("\n")
-    stop("Change these Albums to be EPs and try again.", call. = FALSE)
+    cat("Ignore and keep going? (Y or N): ")
+    input <- file("stdin")
+    resp <- readLines(input, 1)
+    if (tolower(resp) != "y") {
+        stop("Change these Albums to be EPs and try again.", call. = FALSE)
+    }
 }
 check_eps <- eps %>%
     add_count(Album) %>%

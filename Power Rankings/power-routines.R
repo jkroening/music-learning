@@ -417,7 +417,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                 immediate. = TRUE
             )
             warning(
-                paste0("Also manually ", follow, " the artist."),
+                paste0("Also manually follow the artist."),
                 call. = FALSE,
                 immediate. = TRUE
             )
@@ -454,7 +454,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                 immediate. = TRUE
             )
             warning(
-                paste0("Also manually ", follow, " the artist."),
+                paste0("Also manually follow the artist."),
                 call. = FALSE,
                 immediate. = TRUE
             )

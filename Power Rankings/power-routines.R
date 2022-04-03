@@ -197,7 +197,9 @@ releaseSlug <- function(text) {
 
 getter <- function(url, query, ...) {
     response <- httr::GET(url = url, query = query, ...)
-    if (status_code(response) == 429) print("Too many requests. Waiting...")
+    if (httr::status_code(response) == 429) {
+        print("Too many requests. Waiting...")
+    }
 }
 
 getTopSong <- function(artist, album, access_token, year, type) {

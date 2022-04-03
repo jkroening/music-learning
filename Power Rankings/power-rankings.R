@@ -1,16 +1,17 @@
-################################################################################
-## Takes a tab-separated csv table (exported from Wordpress TablePress plugin)
-## of the current power rankings and a tab-separated csv of a playlist exported
-## from iTunes/Apple Music of the new albums/eps to add, downloads the pertinent
-## info from Spotify, parses it, combines the tables, and updated and sorts it.
-## The finished table can then be imported back in to TablePress.
+###############################################################################
+## Takes a tab-separated csv of a playlist exported from iTunes/Apple Music of
+## the new albums/eps to add, downloads the pertinent info from Spotify, parses
+## it, combines the tables, and updated and sorts it. It also requires that up-
+## to-date tab-separated csv tables (exported from Wordpress TablePress plugin)
+## of the current power rankings have been downloaded and placed in the input
+## folder. The finished tables can then be imported back in to TablePress.
 ##
 ## This script depends on the playlist exported from iTunes having album ratings
 ## in the BPM field and "[EP]" or " - EP" in the Album field to distinguish EPs
 ## from full length albums (LPs). The script will also perform some validations
 ## to ensure that the music is properly tagged for building the table of
 ## rankings with complete and clean metadata.
-################################################################################
+###############################################################################
 
 suppressMessages(library(spotifyr))
 suppressMessages(library(dplyr))

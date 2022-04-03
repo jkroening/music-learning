@@ -126,8 +126,12 @@ unlink("./imgs", recursive = TRUE, force = TRUE)
 
 inputs <- list.files("input", "-Power-Rankings-")
 year_types <- c(
-    mapply(list, sort(unique(lps$Year)), "ALBUM", SIMPLIFY = FALSE),
-    mapply(list, sort(unique(eps$Year)), "EP", SIMPLIFY = FALSE)
+    if (nrow(lps)) {
+        mapply(list, sort(unique(lps$Year)), "ALBUM", SIMPLIFY = FALSE)
+    } else NULL,
+    if (nrow(eps)) {
+        mapply(list, sort(unique(eps$Year)), "EP", SIMPLIFY = FALSE)
+    } else NULL
 )
 
 for (yt in year_types) {
@@ -147,8 +151,15 @@ for (yt in year_types) {
         d.add <- lps[lps$Year == year, ]
     }
     if (length(pre) > 0) {
-        d.pre <- read.csv(file.path("input", pre), stringsAsFactors = FALSE,
-                          encoding = "windows-1252", sep = "\t")
+        suppressWarnings(d.pre <- read.csv(
+            file.path("input", pre), stringsAsFactors = FALSE, sep = "\t",
+            encoding = "windows-1252", colClasses = c(
+                "RANK" = "character", "ARTIST" = "character",
+                "ALBUM" = "character", "EP" = "character",
+                "GENRE" = "character", "POWER<br>INDEX" = "numeric",
+                "RATING" = "numeric", "TREND" = "character"
+            )
+        ))
         d.pre$POWER.br.INDEX <- as.numeric(gsub(" ", "", gsub(
             "<span id='pilarge'>|</span><span id='pismall'>|</span>",
             "",

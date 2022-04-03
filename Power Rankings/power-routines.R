@@ -253,11 +253,15 @@ getTopSong <- function(artist, album, access_token, year, type) {
 }
 
 manualURI <- function(artist, release, year, type, curr_URI = NULL) {
-    cat("What is the Spotify URI of the most popular song on the release? ")
+    cat("What is the URL of the most popular song on the release? ")
     cat("(Enter song title or local link if not available on Spotify): ")
     track <- readLines(con = "stdin", 1)
     if (length(track) < 1 && !is.null(curr_URI)) {
         track <- curr_URI
+    } else if (grepl("https://open.spotify.com/track/", track)) {
+        track <- gsub("https://open.spotify.com/track/", "", track)
+        track <- strsplit(track, "\\?")[[1]][1]
+        track <- paste0("spotify:track:", track)
     } else if (!grepl("spotify:track:", track) &&
                !grepl("open.spotify.com", track)) {
         track <- paste0(

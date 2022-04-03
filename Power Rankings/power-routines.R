@@ -213,11 +213,31 @@ getTopSong <- function(artist, album, access_token, year, type) {
         tracks <- spotifyr::get_tracks(tracks$id)
         track <- tracks[
             intersect(
-                grep("US", tracks$available_markets), 
+                grep("US", tracks$available_markets),
                 which.max(tracks$popularity)
             ),
             "uri"
         ]
+        if (length(trimws(track)) == 0) {
+            cat("What is the URL of the release? ")
+            album <- readLines(con = "stdin", 1)
+            album <- gsub("https://open.spotify.com/album/", "", album)
+            album <- strsplit(album, "\\?")[[1]][1]
+            tracks <- spotifyr::get_album_tracks(
+                album, authorization = access_token
+            )
+            tracks <- spotifyr::get_tracks(tracks$id)
+            track <- tracks[
+                intersect(
+                    grep("US", tracks$available_markets),
+                    which.max(tracks$popularity)
+                ),
+                "uri"
+            ]
+            if (length(trimws(track)) == 0) {
+                stop() ## send to error catch if still empty
+            }
+        }
         cat(
             track,
             file = paste0(

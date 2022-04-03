@@ -298,7 +298,7 @@ matchPossibilities <- function(string) {
 }
 
 ## add new entries to previous power rankings, using static vars
-parseRankings <- function(i, df, year, type, follow, config) {
+parseRankings <- function(i, df, year, type, follow, config, access_token) {
     cat("\n")
     artist <- df$ARTIST[[i]]
     print(artist)
@@ -315,18 +315,19 @@ parseRankings <- function(i, df, year, type, follow, config) {
     if (!nchar(df$X[[i]])) {
         out <- findEntry(artists, df[i, ], year, type,
                          trend = "TREND" %in% names(df), follow = follow,
-                         config = config)
+                         config = config, access_token = access_token)
     } else {
         out <- findEntry(artists, df[i, ], year, type,
                          trend = "TREND" %in% names(df), updateOnly = TRUE,
-                         follow = follow, config = config)
+                         follow = follow, config = config,
+                         access_token = access_token)
     }
     return(out)
 }
 
 findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                       updateOnly = FALSE, artistIter = 1, trend = TRUE,
-                      follow, config) {
+                      follow, config, access_token) {
     artist <- entry$ARTIST
     release <- entry[[type]]
     release.trunc <- releaseSlug(release)
@@ -401,7 +402,8 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
             updateOnly = updateOnly,
             trend = trend,
             follow = follow,
-            config = config
+            config = config,
+            access_token = access_token
         ))
     } else if (is.null(artist.id) && artistIter == 1) {
         print(release)
@@ -595,7 +597,8 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         artistIter = artistIter + 1,
         trend = trend,
         follow = follow,
-        config = config
+        config = config,
+        access_token = access_token
     ))
 }
 

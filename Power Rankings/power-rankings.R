@@ -359,7 +359,8 @@ for (yt in year_types) {
     Sys.setenv(SPOTIFY_CLIENT_ID = SPOTIFY_CLIENT_ID)
     Sys.setenv(SPOTIFY_CLIENT_SECRET = SPOTIFY_CLIENT_SECRET)
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
-    assign('access_token', SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
+    access_token <- SPOTIFY_ACCESS_TOKEN
+    assign("access_token", SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
     config.list <- stats::setNames(config[[2]], config[[1]])
 
     ## parser
@@ -368,7 +369,7 @@ for (yt in year_types) {
             follow$Artist == d.sorted[i, "ARTIST"] &
             follow$Album == d.sorted[i, type]
         ]
-        parseRankings(i, d.sorted, year, type, fllw, config.list)
+        parseRankings(i, d.sorted, year, type, fllw, config.list, access_token)
     })
     d.out <- data.frame(
         do.call(rbind, res),

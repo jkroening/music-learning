@@ -115,8 +115,10 @@ if (length(check_deluxe) > 0){
 lps <- cleanDupes(lps)
 eps <- cleanDupes(eps)
 
-## delete files and images
-files <- c(list.files("output", "spotify_playlist.txt"), "follow.txt", "unfollow.txt")
+# delete files and images
+files <- c(
+    list.files("output", "spotify_playlist.txt"), "follow.txt", "unfollow.txt"
+)
 for (f in files) {
     unlink(file.path("output", f), force = TRUE)
 }

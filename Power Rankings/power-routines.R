@@ -45,7 +45,8 @@ cleanDupes <- function(df) {
     grpd <- df %>%
         add_count(Artist, Album, Genre) %>%
         group_by(Artist, Album, Genre) %>%
-        summarize(n = unique(n)) %>%
+        summarize(n = unique(n), .groups = "keep") %>%
+        ungroup () %>%
         select(Artist, Album) %>%
         as.data.frame
     dupes <- grpd[duplicated(grpd$Album), "Album"]

@@ -48,7 +48,7 @@ if (nrow(dirty_tags) > 0) {
 }
 yrs <- d %>%
     group_by(Artist, Album) %>%
-    summarize(yrs = length(unique(Year))) %>%
+    summarize(yrs = length(unique(Year)), .groups = "keep") %>%
     select(Artist, Album, yrs) %>%
     as.data.frame
 if (any(yrs$yrs > 1)) {
@@ -62,7 +62,9 @@ check_lps <- lps %>%
     add_count(Album) %>%
     group_by(Album) %>%
     summarize(
-        Artist = first(Artist), n = unique(n), TotalTime = sum(Time) / 60
+        Artist = first(Artist), n = unique(n),
+        TotalTime = sum(Time) / 60,
+        .groups = "keep"
     ) %>%
     select(Artist, Album, n, TotalTime) %>%
     mutate(invalid = TotalTime < 30 | n < 8) %>%
@@ -85,7 +87,9 @@ check_eps <- eps %>%
     add_count(Album) %>%
     group_by(Album) %>%
     summarize(
-        Artist = first(Artist), n = unique(n), TotalTime = sum(Time) / 60
+        Artist = first(Artist),
+        n = unique(n), TotalTime = sum(Time) / 60,
+        .groups = "keep"
     ) %>%
     select(Artist, Album, n, TotalTime) %>%
     mutate(invalid = (TotalTime >= 30 & n >= 8) | TotalTime < 10 | n < 3) %>%

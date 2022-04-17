@@ -220,8 +220,8 @@ getTopSong <- function(artist, album, access_token, year, type) {
         ]
         if (length(trimws(track)) == 0) {
             cat("What is the URL of the release? ")
-            album <- readLines(con = "stdin", 1)
-            album <- gsub("https://open.spotify.com/album/", "", album)
+            album_url <- readLines(con = "stdin", 1)
+            album <- gsub("https://open.spotify.com/album/", "", album_url)
             album <- strsplit(album, "\\?")[[1]][1]
             tracks <- spotifyr::get_album_tracks(
                 album, authorization = access_token
@@ -247,8 +247,12 @@ getTopSong <- function(artist, album, access_token, year, type) {
             append = TRUE,
             sep = "\n"
         )
+        if (exists("album_url")) {
+            return(album_url)
+        }
     }, error = function(e) {
         manualURI(artist, album, year, type)
+        return("")
     })
 }
 
@@ -436,7 +440,10 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         if (nchar(entry$X) > 0) {
             ## if not a new entry, use previous X
             x <- entry$X
-            getTopSong(artist, x, access_token, year, type)
+            album_url <- getTopSong(artist, x, access_token, year, type)
+            if (length(album_url)) {
+                x <- gsub("href=\\'[A-z0-9\\.\\:\\/]+\\'", album_url, x)
+            }
         } else {
             warning(
                 paste0("Artist '", artist,
@@ -473,7 +480,10 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
         if (nchar(entry$X) > 0) {
             ## if not a new entry, use previous X
             x <- entry$X
-            getTopSong(artist, x, access_token, year, type)
+            album_url <- getTopSong(artist, x, access_token, year, type)
+            if (length(album_url)) {
+                x <- gsub("href=\\'[A-z0-9\\.\\:\\/]+\\'", album_url, x)
+            }
         } else {
             warning(
                 paste0("Release '", release,

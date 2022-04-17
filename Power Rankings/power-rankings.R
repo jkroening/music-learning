@@ -153,11 +153,12 @@ for (yt in year_types) {
     if (length(pre) > 0) {
         suppressWarnings(d.pre <- read.csv(
             file.path("input", pre), stringsAsFactors = FALSE, sep = "\t",
-            encoding = "windows-1252", colClasses = c(
+            encoding = "windows-1252",
+            colClasses = c(
                 "RANK" = "character", "ARTIST" = "character",
                 "ALBUM" = "character", "EP" = "character",
                 "GENRE" = "character", "POWER<br>INDEX" = "numeric",
-                "RATING" = "numeric", "TREND" = "character"
+                "RATING" = "character", "TREND" = "character"
             )
         ))
         d.pre$POWER.br.INDEX <- as.numeric(gsub(" ", "", gsub(

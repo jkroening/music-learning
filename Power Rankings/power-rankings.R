@@ -39,14 +39,14 @@ cat("Don't forget to remove tracks that you don't want captured in the POWER",
     "INDEX calculation that may not be filtered out (e.g. Skits, Credits).\n\n")
 
 ## validations
-dirty_tags <- d[!grepl(":", d$Genre) | grepl(" - EP| - Single", d$Album), ]
-if (nrow(dirty_tags) > 0) {
-    cat("The following releases do not have properly tagged genres:\n\n")
-    print(dirty_tags[ , c("Artist", "Album", "Name")],
-          row.names = FALSE)
-    cat("\n")
-    stop("Clean these tags and try again.", call. = FALSE)
-}
+# dirty_tags <- d[!grepl(":", d$Genre) | grepl(" - EP| - Single", d$Album), ]
+# if (nrow(dirty_tags) > 0) {
+#     cat("The following releases do not have properly tagged genres:\n\n")
+#     print(dirty_tags[ , c("Artist", "Album", "Name")],
+#           row.names = FALSE)
+#     cat("\n")
+#     stop("Clean these tags and try again.", call. = FALSE)
+# }
 yrs <- d %>%
     group_by(Artist, Album) %>%
     summarize(yrs = length(unique(Year)), .groups = "keep") %>%

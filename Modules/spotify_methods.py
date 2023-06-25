@@ -19,7 +19,7 @@ import module_helpers as mhlpr
 import helpers as hlpr
 
 
-with open("../config/config.csv", "U") as f:
+with open("../config/config.csv", "r") as f:
     reader = csv.reader(f)
     config = {}
     for row in reader:
@@ -65,7 +65,7 @@ def authSpotipy(SPOTIPY_CLIENT_ID = None, SPOTIPY_CLIENT_SECRET = None):
     # return sp
 
 def getSpotifyCred():
-    with open("../config/config.csv", "U") as f:
+    with open("../config/config.csv", "r") as f:
         reader = csv.reader(f)
         config = {}
         for row in reader:

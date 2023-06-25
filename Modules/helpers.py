@@ -16,7 +16,7 @@ import module_helpers as mhlpr
 
 def loadFile(location, filename, as_dict = False):
     try:
-        with open(os.path.join(location, filename), "U") as f:
+        with open(os.path.join(location, filename), "r") as f:
             if ".json" in filename:
                 infile = json.load(f)
             elif ".csv" in filename and not as_dict:

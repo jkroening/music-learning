@@ -17,7 +17,7 @@ def main():
     playlist_file = sys.argv[1]
 
     outlist = []
-    with open(playlist_file, "U") as f:
+    with open(playlist_file, "r") as f:
         for line in csv.reader(f, dialect = "excel-tab"):
             if "Date Modified" in line:
                 continue

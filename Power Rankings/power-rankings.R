@@ -191,7 +191,7 @@ for (yt in year_types) {
                 )
             }
         } else {
-            if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+            if (pi >= 62.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
                 follow.bool <- TRUE
                 cat(
                     rel$Artist[1],
@@ -199,7 +199,7 @@ for (yt in year_types) {
                     append = TRUE,
                     sep = "\n"
                 )
-            } else if (pi < 40.0 || (!any(rel$My.Rating > 40) && pi < 60.0)) {
+            } else if (pi < 40.0 || (!any(rel$My.Rating > 40) && pi < 62.0)) {
                 follow.bool <- FALSE
                 cat(
                     rel$Artist[1],

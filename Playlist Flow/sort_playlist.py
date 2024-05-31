@@ -29,7 +29,8 @@ def main():
         "\nEnter one of the following features to sort on: \
         \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
         \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
-        \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
+        \nliveness\nspeechiness\nvalence\nartist_popularity\nsong_popularity \
+        \nrelease_date\nyear\n\n"
     )
     ## ascending or descending (1 = ascending, 0 = descending)
     ascending1 = int(input(
@@ -43,12 +44,14 @@ def main():
         ))
 
     if sort_col1 in ["album", "artist", "tempo", "time_signature", "key",
-                     "mode", "popularity", "release_date", "year"]:
+                     "mode", "artist_popularity", "song_popularity",
+                     "release_date", "year"]:
         sort_col2 = input(
             "\nIn case of ties what second feature would you like to sort on: \
             \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
             \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
-            \nliveness\nspeechiness\nvalence\npopularity\nrelease_date\nyear\n\n"
+            \nliveness\nspeechiness\nvalence\nartist_popularity\nsong_popularity \
+            \nrelease_date\nyear\n\n"
         )
         ## ascending or descending (1 = ascending, 0 = descending)
         ascending2 = int(input(
@@ -63,15 +66,56 @@ def main():
     else:
         sort_col2 = None
         ascending2 = 1
+
+    if sort_col2 in ["album", "artist", "tempo", "time_signature", "key",
+                     "mode", "artist_popularity", "song_popularity", 
+                     "release_date", "year"]:
+        sort_col3 = input(
+            "\nIn case of ties what third feature would you like to sort on: \
+            \ntitle\nartist\nalbum\nduration\ntempo\ntime_signature\nkey\nmode \
+            \nloudness\nacousticness\ndanceability\nenergy\ninstrumentalness \
+            \nliveness\nspeechiness\nvalence\nartist_popularity\nsong_popularity \
+            \nrelease_date\nyear\n\n"
+        )
+        ## ascending or descending (1 = ascending, 0 = descending)
+        ascending3 = int(input(
+            "\nChoose sort order for this feature: \
+            \n(0) descending\n(1) ascending\n\n"
+        ))
+        while ascending3 != 0 and ascending3 != 1:
+            ascending3 = int(input(
+            "\nEnter either 0 or 1: \
+            \n(0) descending\n(1) ascending\n\n"
+        ))
+    else:
+        sort_col3 = None
+        ascending3 = 1
     print("")
 
-    if "popularity" in [sort_col1, sort_col2]:
+    if "artist_popularity" in [sort_col1, sort_col2, sort_col3]:
         db, unfound_tracks = sptfy.pullSpotifyTracks('../input',
                                                      'input.txt',
                                                      sptpy = sptpy)
         df = pd.DataFrame.from_dict(db)
+        artists = [
+            sptfy.pullSpotifyArtist(artist_id, sptpy = sptpy)
+            for artist_id in df.spotify_artist_id.values
+        ]
+        df['artist_popularity'] = [art['artist_popularity'] for art in artists]
+        df = df.rename(columns = {'popularity': 'song_popularity'})
         db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
-        db = db.merge(df[["spotify_id", "popularity"]], on = "spotify_id")
+        db = db.merge(
+            df[["spotify_id", "artist_popularity", "song_popularity"]],
+            on = "spotify_id"
+        )
+    elif "song_popularity" in [sort_col1, sort_col2, sort_col3]:
+        db, unfound_tracks = sptfy.pullSpotifyTracks('../input',
+                                                     'input.txt',
+                                                     sptpy = sptpy)
+        df = pd.DataFrame.from_dict(db)
+        df = df.rename(columns = {'popularity': 'song_popularity'})
+        db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
+        db = db.merge(df[["spotify_id", "song_popularity"]], on = "spotify_id")
     else:
         ## get subset of db based on input.txt
         db, unfound_tracks = hlpr.processInput(input_playlist = "input.txt")
@@ -82,12 +126,23 @@ def main():
     if sort_col2 is not None and sort_col2 not in db.columns:
         print("\nSort column '{}' not in database!").format(sort_col2)
         sys.exit()
+    if sort_col3 is not None and sort_col3 not in db.columns:
+        print("\nSort column '{}' not in database!").format(sort_col3)
+        sys.exit()
 
     if sort_col2 is None:
         sorted_db = db.sort_values(by = sort_col1, ascending = ascending1)
+    elif sort_col3 is None:
+        sorted_db = db.sort_values(
+            by = [sort_col1, sort_col2],
+            ascending = [ascending1, ascending2]
+        )
     else:
-        sorted_db = db.sort_values(by = [sort_col1, sort_col2],
-                                   ascending = [ascending1, ascending2])
+        sorted_db = db.sort_values(
+            by = [sort_col1, sort_col2, sort_col3],
+            ascending = [ascending1, ascending2, ascending3]
+        )
+
     sorted_tracks = [
         "spotify:track:{}".format(x[1]['spotify_id']).rstrip() \
         if len(x[1]['spotify_id']) < 36 else x[1]['spotify_id'].rstrip() \

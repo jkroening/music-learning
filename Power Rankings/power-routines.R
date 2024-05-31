@@ -113,7 +113,7 @@ powerMath <- function(ratings) {
     ## scale
     scaled_score <- (transformed_score - mn2) / (mx2 - mn2)
     x <- (round(scaled_score * 1000)) / 1.0
-    if (x > 1000) x <- 1000 else if (x < 0) x <- 1
+    if (isTRUE(x > 1000)) x <- 1000 else if (isTRUE(x < 0)) x <- 1
     return(x / 10)
 }
 

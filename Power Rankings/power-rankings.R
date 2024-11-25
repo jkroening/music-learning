@@ -312,7 +312,7 @@ for (yt in year_types) {
         d1 <- d.pre[!is.na(d.pre$POWER.br.INDEX), ]
         ## all index scores, including new
         d2 <- as.numeric(d.sorted$POWER.br.INDEX)
-        if (nrow(d.pre) != 1 && d.pre$POWER.br.INDEX != "") {
+        if (nrow(d.pre) != 1 && !any(d.pre$POWER.br.INDEX == "")) {
             cuts <- if (length(d2) < 50) 0.25 else 0.2
             cuts <- if (length(d2) > 80) 0.10 else cuts
             cut1 <- .bincode(

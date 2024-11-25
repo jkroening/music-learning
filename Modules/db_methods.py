@@ -111,12 +111,16 @@ def buildArtistDataFrame(song_db, artist_db, token = None, sptpy = None):
             if exists:
                 artist_db.update(pd.DataFrame(artist, index = idxs))
             else:
-                artist_db = artist_db.append(artist, ignore_index = True).fillna(0)
+                artist_db = pd.concat(
+                    [artist_db, pd.Series(artist).to_frame().T],
+                    ignore_index = True
+                )
+                aritst_db = artist_db.infer_objects(copy = False).fillna(0)
     return artist_db
 
 def addArtistDataToSongs(song_db, artist_db):
     db = pd.merge(song_db, artist_db, on = ['spotify_artist_id'])
-    db = db.fillna(0)
+    db = db.infer_objects(copy = False).fillna(0)
     return db
 
 def buildSubgenres():

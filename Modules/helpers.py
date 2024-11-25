@@ -206,7 +206,10 @@ def processInput(terms = False, genres = False, input_playlist = None, token = N
                 if not dbm.lookupSongBySpotifyID(song_uri, song_db):
                     song = sptfy.getAudioFeatures(song_uri, token = token, sptpy = sptpy)
                     if song is not None:
-                        song_db = song_db.append(song, ignore_index = True)
+                        song_db = pd.concat(
+                            [song_db, pd.Series(song).to_frame().T],
+                            ignore_index = True
+                        )
             else:
                 print("{} not found.".format(track))
                 unfound_tracks.append(track)
@@ -214,7 +217,10 @@ def processInput(terms = False, genres = False, input_playlist = None, token = N
             if not dbm.lookupSongBySpotifyID(track, song_db):
                 song = sptfy.getAudioFeatures(track, token = token, sptpy = sptpy)
                 if song is not None:
-                    song_db = song_db.append(song, ignore_index = True)
+                    song_db = pd.concat(
+                        [song_db, pd.Series(song).to_frame().T],
+                        ignore_index = True
+                    )
                 else:
                     print("{} not found.".format(track))
                     unfound_tracks.append(track)
@@ -237,7 +243,7 @@ def processInput(terms = False, genres = False, input_playlist = None, token = N
         ## add artist genres to songs subset db
         ## and because capitalization might be different
         ## drop 'artist' from one of the dataframes before merging
-        artist_db = artist_db.drop('artist', 1)
+        artist_db = artist_db.drop('artist', axis = 1)
         db_out = dbm.addArtistDataToSongs(db_subset, artist_db)
     else:
         db_out = db_subset

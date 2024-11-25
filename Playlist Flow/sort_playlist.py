@@ -150,7 +150,8 @@ def main():
     ]
 
     print("\n")
-    print(sorted_db[["artist", "title"]])
+    with pd.option_context('display.max_rows', None):
+        print(sorted_db[["artist", "title"]])
 
     hlpr.writeTextFile(sorted_tracks, "../output", "sorted_playlist.txt")
     print("\n")

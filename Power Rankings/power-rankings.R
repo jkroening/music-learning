@@ -13,7 +13,7 @@
 ## rankings with complete and clean metadata.
 ###############################################################################
 
-suppressMessages(library(spotifyr))
+suppressMessages(library(spotifyR))
 suppressMessages(library(dplyr))
 suppressMessages(library(stringi))
 source("power-routines.R")
@@ -134,6 +134,10 @@ year_types <- c(
     } else NULL
 )
 
+## authorize spotifyR
+auth_obj <- auth()
+access_token <- auth_obj$access_token
+
 for (yt in year_types) {
     year <- yt[[1]]
     type <- yt[[2]]
@@ -171,9 +175,9 @@ for (yt in year_types) {
     follow <- data.frame()
     for (release in unique(d.add$Album)) {
         rel <- d.add[d.add$Album == release, ]
-        pi <- powerIndex(rel)
+        power.index <- powerIndex(rel)
         if (type == "ALBUM") {
-            if (pi >= 65.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+            if (power.index >= 65.0 || (any(rel$My.Rating > 60) && power.index >= 62.0)) {
                 follow.bool <- TRUE
                 cat(
                     rel$Artist[1],
@@ -191,7 +195,7 @@ for (yt in year_types) {
                 )
             }
         } else {
-            if (pi >= 62.0 || (any(rel$My.Rating > 60) && pi >= 60.0)) {
+            if (power.index >= 62.0 || (any(rel$My.Rating > 60) && power.index >= 60.0)) {
                 follow.bool <- TRUE
                 cat(
                     rel$Artist[1],
@@ -199,7 +203,7 @@ for (yt in year_types) {
                     append = TRUE,
                     sep = "\n"
                 )
-            } else if (pi < 40.0 || (!any(rel$My.Rating > 40) && pi < 62.0)) {
+            } else if (power.index < 40.0 || (!any(rel$My.Rating > 40) && power.index < 62.0)) {
                 follow.bool <- FALSE
                 cat(
                     rel$Artist[1],
@@ -357,32 +361,45 @@ for (yt in year_types) {
         d.sorted$TREND <- TREND.NEW
     }
 
-    BASE_URL <- "https://api.spotify.com"
-    API_VERSION <- 'v1'
-    SEARCH_URL <- glue::glue('{BASE_URL}/{API_VERSION}/search')
-    ALBUMS_URL <- glue::glue('{BASE_URL}/{API_VERSION}/albums')
-    ARTISTS_URL <- glue::glue('{BASE_URL}/{API_VERSION}/artists')
-    ## authorize spotifyr
-    config <- read.csv(
-        "../config/config.csv", stringsAsFactors = FALSE, header = FALSE
-    )
-    SPOTIFY_CLIENT_ID = config[config[[1]] == "SPOTIFY_CLIENT_ID", 2]
-    SPOTIFY_CLIENT_SECRET = config[config[[1]] == "SPOTIFY_CLIENT_SECRET", 2]
-    Sys.setenv(SPOTIFY_CLIENT_ID = SPOTIFY_CLIENT_ID)
-    Sys.setenv(SPOTIFY_CLIENT_SECRET = SPOTIFY_CLIENT_SECRET)
-    SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
-    access_token <- SPOTIFY_ACCESS_TOKEN
-    assign("access_token", SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
-    config.list <- stats::setNames(config[[2]], config[[1]])
-
     ## parser
     res <- lapply(1:nrow(d.sorted), function(i) {
-        fllw <- follow$follow.bool[
-            follow$Artist == d.sorted[i, "ARTIST"] &
-            follow$Album == d.sorted[i, type]
-        ]
-        parseRankings(i, d.sorted, year, type, fllw, config.list, access_token)
+        parseRankings(i, d.sorted, year, type, access_token)
     })
+    ## un/follow
+    auth_token <- auth_obj$auth_token
+    for (i in 1:nrow(follow)) {
+        artist <- follow[i, "Artist"]
+        artists <- spotifyR:::search_spotify(
+            decodeString(artist),
+            type = "artist",
+            market = "US",
+            authorization = access_token
+        )
+        artist.id <- NULL
+        if ("name" %in% names(artists) &&
+            length(artists$name)) {
+            for (j in 1:length(artists$name)) {
+                ## find first exact match
+                poss <- matchPossibilities(artist)
+                if (stringi::stri_trans_tolower(artists$name[j]) %in% poss) {
+                    artist.id <- artists$id[j]
+                    break
+                }
+            }
+        }
+        fllw <- follow$follow.bool[[i]]
+        if (is.null(artist.id)) {
+            action <- if (fllw) "follow" else "unfollow"
+            warning(
+                paste(
+                    "You will need to manually", action, artist, "in Spotify."
+                ),
+                call. = FALSE, immediate. = TRUE
+            )
+        } else {
+            auth_token <- updateFollowing(artist, artist.id, fllw, auth_token)
+        }
+    }
     d.out <- data.frame(
         do.call(rbind, res),
         stringsAsFactors = FALSE
@@ -400,3 +417,11 @@ for (yt in year_types) {
     d.pre <- NULL
     d.add <- NULL
 }
+
+warning(
+    paste0(
+        "Check 'unfollow.txt' to be certain you want to unfollow those ", 
+        "artists in Spotify."
+    ),
+    call. = FALSE, immediate. = TRUE
+)

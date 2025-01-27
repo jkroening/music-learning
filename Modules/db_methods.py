@@ -40,11 +40,11 @@ def subsetDataFrame(df, tracks):
 
 def makeGenresDummies(artist, album = None):
     for genre in artist['genres']:
-        artist[re.sub("[\W\d]", "_", genre.strip())] = 1
+        artist[re.sub(r"[\W\d]", "_", genre.strip())] = 1
     if album is not None:
         for genre in album['genres']:
-            if re.sub("[\W\d]", "_", genre.strip()) not in artist:
-                artist[re.sub("[\W\d]", "_", genre.strip())] = 1
+            if re.sub(r"[\W\d]", "_", genre.strip()) not in artist:
+                artist[re.sub(r"[\W\d]", "_", genre.strip())] = 1
     artist.pop('genres', None)
     return artist
 

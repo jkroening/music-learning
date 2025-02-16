@@ -367,6 +367,7 @@ for (yt in year_types) {
     })
     ## un/follow
     auth_token <- auth_obj$auth_token
+    cat("\n")
     for (i in 1:nrow(follow)) {
         artist <- follow[i, "Artist"]
         artists <- spotifyR:::search_spotify(
@@ -418,6 +419,7 @@ for (yt in year_types) {
     d.add <- NULL
 }
 
+cat("\n")
 warning(
     paste0(
         "Check 'unfollow.txt' to be certain you want to unfollow those ", 

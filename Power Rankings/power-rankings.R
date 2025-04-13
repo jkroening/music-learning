@@ -267,16 +267,10 @@ for (yt in year_types) {
         )
         if (nrow(common)) {
             for (i in 1:nrow(common)) {
-                update.pre <- which(
-                    d.new$ARTIST == common$ARTIST[[i]] &
-                    d.new[ , type] == common[ , type][[i]] &
-                    d.new[ , "X"] != ""
-                )
-                update.add <- which(
-                    d.new$ARTIST == common$ARTIST[[i]] &
-                    d.new[ , type] == common[ , type][[i]] &
-                    d.new[ , "X"] == ""
-                )
+                update <- d.new$ARTIST == common$ARTIST[[i]] &
+                    d.new[ , type] == common[ , type][[i]]
+                update.pre <- which(update & d.new[ , "X"] != "")
+                update.add <- which(update & d.new[ , "X"] == "")
                 if ("TREND" %in% names(d.new)) {
                     pre_pi <- d.new[update.pre, "POWER.br.INDEX"]
                     add_pi <- d.new[update.add, "POWER.br.INDEX"]

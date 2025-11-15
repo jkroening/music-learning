@@ -741,7 +741,7 @@ parseGenre <- function(genre) {
 }
 
 updateFollowing <- function(artist, artist.id, follow, auth_token) {
-    if (auth_token$app$key != Sys.getenv("PRIMARY_SPOTIFY_CLIENT_ID")) {
+    if (isTRUE(auth_token$app$key != Sys.getenv("PRIMARY_SPOTIFY_CLIENT_ID"))) {
         invisible(readline(
             prompt = paste0(
                 "In you default browser, be sure you are logged into the ",

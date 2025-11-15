@@ -101,7 +101,12 @@ if (any(check_eps$invalid)) {
     print(check_eps[check_eps$invalid, c("Artist", "Album")],
           row.names = FALSE)
     cat("\n")
-    stop("Fix or remove these EPs and try again.", call. = FALSE)
+    cat("Ignore and keep going? (Y or N): ")
+    input <- file("stdin")
+    resp <- readLines(input, 1)
+    if (tolower(resp) != "y") {
+        stop("Fix or remove these EPs and try again.", call. = FALSE)
+    }
 }
 check_deluxe <- unique(c(lps[grepl("Deluxe", lps$Album), "Album"],
                          eps[grepl("Deluxe", eps$Album), "Album"]))
@@ -176,6 +181,7 @@ for (yt in year_types) {
     for (release in unique(d.add$Album)) {
         rel <- d.add[d.add$Album == release, ]
         power.index <- powerIndex(rel)
+        follow.bool <- FALSE
         if (type == "ALBUM") {
             if (power.index >= 65.0 || (any(rel$My.Rating > 60) && power.index >= 62.0)) {
                 follow.bool <- TRUE

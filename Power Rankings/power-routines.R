@@ -794,26 +794,39 @@ auth <- function(secondary = FALSE, code = TRUE) {
     secondary_id <- config_list[["SECONDARY_SPOTIFY_CLIENT_ID"]]
     secondary_secret <- config_list[["SECONDARY_SPOTIFY_CLIENT_SECRET"]]
     secondary_scopes <- config_list[["SECONDARY_SPOTIFY_SCOPE"]]
+    assign("PRIMARY_SPOTIFY_CLIENT_ID", primary_id, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_ID = primary_id)
+    assign("PRIMARY_SPOTIFY_CLIENT_SECRET", primary_secret, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_SECRET = primary_secret)
+    assign("PRIMARY_SPOTIFY_SCOPES", primary_scopes, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_SCOPES = primary_scopes)
+    assign("SECONDARY_SPOTIFY_CLIENT_ID", secondary_id, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_id)
+    assign("SECONDARY_SPOTIFY_CLIENT_ID", secondary_secret, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_secret)
+    assign("SECONDARY_SPOTIFY_SCOPES", secondary_scopes, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_SCOPES = secondary_scopes)
     if (!secondary) {
+        assign("SPOTIFY_CLIENT_ID", primary_id, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_ID = primary_id)
+        assign("SPOTIFY_CLIENT_SECRET", primary_secret, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_SECRET = primary_secret)
+        assign("SPOTIFY_SCOPES", primary_scopes, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_SCOPES = primary_scopes)
     } else {
+        assign("SPOTIFY_CLIENT_ID", secondary_id, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_ID = secondary_id)
+        assign("SPOTIFY_CLIENT_SECRET", secondary_secret, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_SECRET = secondary_secret)
+        assign("SPOTIFY_SCOPES", secondary_scopes, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_SCOPES = secondary_scopes)
     }
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     access_token <- SPOTIFY_ACCESS_TOKEN
     assign("access_token", SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
+    Sys.setenv(access_token = SPOTIFY_ACCESS_TOKEN)
     if (code) {
-        auth_token <- spotifyr::get_spotify_authorization_code(scope = confi)
+        auth_token <- spotifyr::get_spotify_authorization_code(scope = SPOTIFY_SCOPES)
     } else {
         auth_token <- NULL
     }

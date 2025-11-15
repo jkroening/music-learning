@@ -758,9 +758,12 @@ updateFollowing <- function(artist, artist.id, follow, auth_token) {
                 "artist", c(artist.id), auth_token
             )
         } else {
+            auth_header <- httr::add_headers(
+                Authorization = paste0("Bearer ", auth_token)
+            )
             response <- httr:::DELETE(
                 "https://api.spotify.com/v1/me/following",
-                httr:::config(token = auth_token),
+                auth_header,
                 query = list(type = "artist", ids = c(artist.id)),
                 encode = "json"
             )
@@ -787,18 +790,24 @@ auth <- function(secondary = FALSE, code = TRUE) {
     config_list <- stats::setNames(config[[2]], config[[1]])
     primary_id <- config_list[["SPOTIFY_CLIENT_ID"]]
     primary_secret <- config_list[["SPOTIFY_CLIENT_SECRET"]]
+    primary_scopes <- config_list[["SPOTIFY_SCOPE"]]
     secondary_id <- config_list[["SECONDARY_SPOTIFY_CLIENT_ID"]]
     secondary_secret <- config_list[["SECONDARY_SPOTIFY_CLIENT_SECRET"]]
+    secondary_scopes <- config_list[["SECONDARY_SPOTIFY_SCOPE"]]
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_ID = primary_id)
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_SECRET = primary_secret)
+    Sys.setenv(PRIMARY_SPOTIFY_SCOPES = primary_scopes)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_id)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_secret)
+    Sys.setenv(SECONDARY_SPOTIFY_SCOPES = secondary_scopes)
     if (!secondary) {
         Sys.setenv(SPOTIFY_CLIENT_ID = primary_id)
         Sys.setenv(SPOTIFY_CLIENT_SECRET = primary_secret)
+        Sys.setenv(SPOTIFY_SCOPES = primary_scopes)
     } else {
         Sys.setenv(SPOTIFY_CLIENT_ID = secondary_id)
-        Sys.setenv(SPOTIFY_CLIENT_SECRET = secondary_secret)      
+        Sys.setenv(SPOTIFY_CLIENT_SECRET = secondary_secret)
+        Sys.setenv(SPOTIFY_SCOPES = secondary_scopes)
     }
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     access_token <- SPOTIFY_ACCESS_TOKEN

@@ -13,7 +13,7 @@
 ## rankings with complete and clean metadata.
 ###############################################################################
 
-suppressMessages(library(spotifyR))
+suppressMessages(library(spotifyr))
 suppressMessages(library(dplyr))
 suppressMessages(library(stringi))
 source("power-routines.R")
@@ -134,7 +134,7 @@ year_types <- c(
     } else NULL
 )
 
-## authorize spotifyR
+## authorize spotifyr
 auth_obj <- auth()
 access_token <- auth_obj$access_token
 
@@ -364,7 +364,7 @@ for (yt in year_types) {
     cat("\n")
     for (i in 1:nrow(follow)) {
         artist <- follow[i, "Artist"]
-        artists <- spotifyR:::search_spotify(
+        artists <- spotifyr:::search_spotify(
             decodeString(artist),
             type = "artist",
             market = "US",

@@ -207,10 +207,10 @@ getTopSong <- function(artist, album, x, access_token, year, type) {
         album_uri <- gsub('(.*album/)|(\\?.*|\'.*)', '', x)
     }
     tryCatch({
-        tracks <- spotifyR::get_album_tracks(
+        tracks <- spotifyr::get_album_tracks(
             album_uri, authorization = access_token
         )
-        tracks <- spotifyR::get_tracks(tracks$id)
+        tracks <- spotifyr::get_tracks(tracks$id)
         track <- tracks[
             intersect(
                 grep("US", tracks$available_markets),
@@ -224,10 +224,10 @@ getTopSong <- function(artist, album, x, access_token, year, type) {
             # album_url <- readLines(con = "stdin", 1)
             # album_url <- gsub("https://open.spotify.com/album/", "", album_url)
             # album_uri <- strsplit(album_url, "\\?")[[1]][1]
-            # tracks <- spotifyR::get_album_tracks(
+            # tracks <- spotifyr::get_album_tracks(
             #     album_uri, authorization = access_token
             # )
-            # tracks <- spotifyR::get_tracks(tracks$id)
+            # tracks <- spotifyr::get_tracks(tracks$id)
             # track <- tracks[
             #     intersect(
             #         grep("US", tracks$available_markets),
@@ -312,7 +312,7 @@ manualURL <- function(album, access_token) {
     release_url <- readLines(con = "stdin", 1)
     album_uri <- gsub('(.*album/)|(\\?.*|\'.*)', '', release_url)
     tryCatch({
-        album_obj <- spotifyR::get_album(
+        album_obj <- spotifyr::get_album(
             album_uri, authorization = access_token
         )
     }, error = function(e) {
@@ -320,7 +320,7 @@ manualURL <- function(album, access_token) {
             auth_obj <- auth(secondary = TRUE, code = FALSE)
             access_token <- auth_obj$access_token
         }
-        album_obj <- spotifyR::get_album(
+        album_obj <- spotifyr::get_album(
             album_uri, authorization = access_token
         )
     })
@@ -375,7 +375,7 @@ parseRankings <- function(i, df, year, type, access_token) {
     artists <- NULL
     while (is.null(artists)) {
         tryCatch({
-            artists <- spotifyR:::search_spotify(
+            artists <- spotifyr:::search_spotify(
                 artist,
                 type = "artist",
                 market = "US",
@@ -386,7 +386,7 @@ parseRankings <- function(i, df, year, type, access_token) {
                 auth_obj <- auth(secondary = TRUE, code = FALSE)
                 access_token <- auth_obj$access_token
             }
-            artists <- spotifyR:::search_spotify(
+            artists <- spotifyr:::search_spotify(
                 artist,
                 type = "artist",
                 market = "US",
@@ -472,7 +472,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
     }
     if (firstAttempt && is.null(artist.id)) {
         tryCatch({
-            artists <- spotifyR:::search_spotify(
+            artists <- spotifyr:::search_spotify(
                 decodeString(artist),
                 type = "artist",
                 market = "US",
@@ -483,7 +483,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                 auth_obj <- auth(secondary = TRUE, code = FALSE)
                 access_token <- auth_obj$access_token
             }
-            artists <- spotifyR:::search_spotify(
+            artists <- spotifyr:::search_spotify(
                 decodeString(artist),
                 type = "artist",
                 market = "US",
@@ -582,7 +582,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
     releases <- NULL
     while (is.null(releases)) {
         tryCatch({
-            releases <- spotifyR:::get_artist_albums(
+            releases <- spotifyr:::get_artist_albums(
                 artist.id, market = "US", authorization = access_token
             )
         }, error = function(e) {
@@ -604,7 +604,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
             if (release.iter %in% possibilities || poss) {
                 release.id <- releases$id[k]
                 tryCatch({
-                    tracks <- spotifyR:::get_album_tracks(
+                    tracks <- spotifyr:::get_album_tracks(
                         release.id, authorization = access_token
                     )
                 }, error = function(e) {
@@ -630,7 +630,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                         )
                     }
                     tryCatch({
-                        tracks.top <- spotifyR:::get_artist_top_tracks(
+                        tracks.top <- spotifyr:::get_artist_top_tracks(
                             artist.id,
                             market = "US",
                             authorization = access_token
@@ -653,7 +653,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                         ## no track from this album is in the artist's top 10
                         tryCatch({
                             pops <- sapply(tracks$id, function(x) {
-                                spotifyR:::get_track(
+                                spotifyr:::get_track(
                                     x,
                                     market = "US",
                                     authorization = access_token
@@ -665,7 +665,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                                 access_token <- auth_obj$access_token
                             }
                             pops <- sapply(tracks$id, function(x) {
-                                spotifyR:::get_track(
+                                spotifyr:::get_track(
                                     x,
                                     market = "US",
                                     authorization = access_token
@@ -754,7 +754,7 @@ updateFollowing <- function(artist, artist.id, follow, auth_token) {
     }
     tryCatch({
         if (follow) {
-            response <- spotifyR::follow_artists_or_users(
+            response <- spotifyr::follow_artists_or_users(
                 "artist", c(artist.id), auth_token
             )
         } else {
@@ -780,7 +780,7 @@ updateFollowing <- function(artist, artist.id, follow, auth_token) {
 }
 
 auth <- function(secondary = FALSE, code = TRUE) {
-    ## authorize spotifyR
+    ## authorize spotifyr
     config <- read.csv(
         "../config/config.csv", stringsAsFactors = FALSE, header = FALSE
     )
@@ -800,11 +800,11 @@ auth <- function(secondary = FALSE, code = TRUE) {
         Sys.setenv(SPOTIFY_CLIENT_ID = secondary_id)
         Sys.setenv(SPOTIFY_CLIENT_SECRET = secondary_secret)      
     }
-    SPOTIFY_ACCESS_TOKEN <- spotifyR::get_spotify_access_token()
+    SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     access_token <- SPOTIFY_ACCESS_TOKEN
     assign("access_token", SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
     if (code) {
-        auth_token <- spotifyR::get_spotify_authorization_code()
+        auth_token <- spotifyr::get_spotify_authorization_code(scope = confi)
     } else {
         auth_token <- NULL
     }

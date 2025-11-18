@@ -268,9 +268,13 @@ getTopSong <- function(artist, album, x, access_token, year, type) {
             access_token <- auth_obj$access_token
         }
         album_url <- manualURL(album, access_token)
-        unused <- getTopSong(
-            artist, album, album_url, access_token, year, type
-        )
+        if (grepl("open.spotify.com", album_url)) {
+            album_url <- getTopSong(
+                artist, album, album_url, access_token, year, type
+            )
+        } else {
+            .unused <- manualURI(artist, album, year, type)
+        }
         return(album_url)
     })
 }
@@ -310,28 +314,30 @@ manualURL <- function(album, access_token) {
     cat("What is the URL of the release? ")
     cat("(Enter URL to link from image if not available on Spotify): ")
     release_url <- readLines(con = "stdin", 1)
-    album_uri <- gsub('(.*album/)|(\\?.*|\'.*)', '', release_url)
-    tryCatch({
-        album_obj <- spotifyr::get_album(
-            album_uri, authorization = access_token
+    if (grepl("open.spotify.com", release_url)) {
+        album_uri <- gsub('(.*album/)|(\\?.*|\'.*)', '', release_url)
+        tryCatch({
+            album_obj <- spotifyr::get_album(
+                album_uri, authorization = access_token
+            )
+        }, error = function(e) {
+            if ("http_429" %in% class(e)) {
+                auth_obj <- auth(secondary = TRUE, code = FALSE)
+                access_token <- auth_obj$access_token
+            }
+            album_obj <- spotifyr::get_album(
+                album_uri, authorization = access_token
+            )
+        })
+        dir.create(file.path("./imgs"), showWarnings = FALSE)
+        download.file(
+            album_obj$images[[1]][1],
+            file.path(
+                "./imgs/", paste0(releaseSlug(album), ".jpg")
+            ),
+            quiet = TRUE
         )
-    }, error = function(e) {
-        if ("http_429" %in% class(e)) {
-            auth_obj <- auth(secondary = TRUE, code = FALSE)
-            access_token <- auth_obj$access_token
-        }
-        album_obj <- spotifyr::get_album(
-            album_uri, authorization = access_token
-        )
-    })
-    dir.create(file.path("./imgs"), showWarnings = FALSE)
-    download.file(
-        album_obj$images[[1]][1],
-        file.path(
-            "./imgs/", paste0(releaseSlug(album), ".jpg")
-        ),
-        quiet = TRUE
-    )
+    }
     return(release_url)
 }
 
@@ -397,7 +403,7 @@ parseRankings <- function(i, df, year, type, access_token) {
     }
     if (!nchar(df$X[[i]])) {
         out <- findEntry(artists, df[i, ], year, type,
-                         trend = "TREND" %in% names(df), 
+                         trend = "TREND" %in% names(df),
                          access_token = access_token)
     } else {
         out <- findEntry(artists, df[i, ], year, type,
@@ -552,6 +558,7 @@ findEntry <- function(artists, entry, year, type, firstAttempt = TRUE,
                     LINK.PRE, album_url, LINK.MID, release_trunc, LINK.END
                 )
             }
+            if (updateOnly) return(old.entry)
         } else {
             warning(
                 paste0("Release '", release,

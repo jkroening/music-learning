@@ -748,7 +748,7 @@ parseGenre <- function(genre) {
 }
 
 updateFollowing <- function(artist, artist.id, follow, auth_token) {
-    if (isTRUE(auth_token$app$key != Sys.getenv("PRIMARY_SPOTIFY_CLIENT_ID"))) {
+    if (!isTRUE(Sys.getenv("SPOTIFY_CLIENT_ID") == Sys.getenv("PRIMARY_SPOTIFY_CLIENT_ID"))) {
         invisible(readline(
             prompt = paste0(
                 "In you default browser, be sure you are logged into the ",
@@ -798,21 +798,27 @@ auth <- function(secondary = FALSE, code = TRUE) {
     primary_id <- config_list[["SPOTIFY_CLIENT_ID"]]
     primary_secret <- config_list[["SPOTIFY_CLIENT_SECRET"]]
     primary_scopes <- config_list[["SPOTIFY_SCOPE"]]
+    primary_redirect <- config_list[["SPOTIFY_REDIRECT_URI"]]
     secondary_id <- config_list[["SECONDARY_SPOTIFY_CLIENT_ID"]]
     secondary_secret <- config_list[["SECONDARY_SPOTIFY_CLIENT_SECRET"]]
     secondary_scopes <- config_list[["SECONDARY_SPOTIFY_SCOPE"]]
+    secondary_redirect <- config_list[["SECONDARY_SPOTIFY_REDIRECT_URI"]]
     assign("PRIMARY_SPOTIFY_CLIENT_ID", primary_id, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_ID = primary_id)
     assign("PRIMARY_SPOTIFY_CLIENT_SECRET", primary_secret, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_CLIENT_SECRET = primary_secret)
     assign("PRIMARY_SPOTIFY_SCOPES", primary_scopes, envir = .GlobalEnv)
     Sys.setenv(PRIMARY_SPOTIFY_SCOPES = primary_scopes)
+    assign("SPOTIFY_REDIRECT_URI", primary_redirect, envir = .GlobalEnv)
+    Sys.setenv(SPOTIFY_REDIRECT_URI = primary_redirect)
     assign("SECONDARY_SPOTIFY_CLIENT_ID", secondary_id, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_id)
     assign("SECONDARY_SPOTIFY_CLIENT_ID", secondary_secret, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_CLIENT_ID = secondary_secret)
     assign("SECONDARY_SPOTIFY_SCOPES", secondary_scopes, envir = .GlobalEnv)
     Sys.setenv(SECONDARY_SPOTIFY_SCOPES = secondary_scopes)
+    assign("SECONDARY_SPOTIFY_REDIRECT_URI", secondary_redirect, envir = .GlobalEnv)
+    Sys.setenv(SECONDARY_SPOTIFY_REDIRECT_URI = secondary_redirect)
     if (!secondary) {
         assign("SPOTIFY_CLIENT_ID", primary_id, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_ID = primary_id)
@@ -820,6 +826,8 @@ auth <- function(secondary = FALSE, code = TRUE) {
         Sys.setenv(SPOTIFY_CLIENT_SECRET = primary_secret)
         assign("SPOTIFY_SCOPES", primary_scopes, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_SCOPES = primary_scopes)
+        assign("SPOTIFY_REDIRECT_URI", primary_redirect, envir = .GlobalEnv)
+        Sys.setenv(SPOTIFY_REDIRECT_URI = primary_redirect)
     } else {
         assign("SPOTIFY_CLIENT_ID", secondary_id, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_CLIENT_ID = secondary_id)
@@ -827,13 +835,53 @@ auth <- function(secondary = FALSE, code = TRUE) {
         Sys.setenv(SPOTIFY_CLIENT_SECRET = secondary_secret)
         assign("SPOTIFY_SCOPES", secondary_scopes, envir = .GlobalEnv)
         Sys.setenv(SPOTIFY_SCOPES = secondary_scopes)
+        assign("SPOTIFY_REDIRECT_URI", secondary_redirect, envir = .GlobalEnv)
+        Sys.setenv(SPOTIFY_REDIRECT_URI = secondary_redirect)
     }
     SPOTIFY_ACCESS_TOKEN <- spotifyr::get_spotify_access_token()
     access_token <- SPOTIFY_ACCESS_TOKEN
     assign("access_token", SPOTIFY_ACCESS_TOKEN, envir = .GlobalEnv)
     Sys.setenv(access_token = SPOTIFY_ACCESS_TOKEN)
     if (code) {
-        auth_token <- spotifyr::get_spotify_authorization_code(scope = SPOTIFY_SCOPES)
+        auth_url <- httr::modify_url(
+            url = "https://accounts.spotify.com/authorize",
+            query = list(
+            client_id = SPOTIFY_CLIENT_ID,
+            response_type = "code",
+            redirect_uri = SPOTIFY_REDIRECT_URI,
+            scope = SPOTIFY_SCOPES,
+            state = "state123"
+            )
+        )
+
+        cat("Paste this URL into a browser and then copy the 'code' parameter from the redirected URL:\n")
+        cat(auth_url)
+        cat("\n")
+        cat("Paste the code here and press Enter: ")
+
+        auth_token <- base::readLines(file("stdin"), n = 1)
+        auth_token <- base::trimws(auth_token)
+
+        res <- httr::POST(
+            url = "https://accounts.spotify.com/api/token",
+            httr::accept_json(),
+            httr::authenticate(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET),
+            body = list(
+                grant_type = "authorization_code",
+                code = auth_token,
+                redirect_uri = SPOTIFY_REDIRECT_URI
+            ),
+            encode = "form"
+        )
+
+        token_info <- httr::content(res, as = "parsed", type = "application/json")
+        access_token <- token_info$access_token
+        refresh_token <- token_info$refresh_token
+        expires_in <- token_info$expires_in
+
+        cat("\nAccess token:", access_token, "\n")
+        cat("Refresh token:", refresh_token, "\n")
+        cat("Expires in (seconds):", expires_in, "\n")
     } else {
         auth_token <- NULL
     }

@@ -366,7 +366,6 @@ for (yt in year_types) {
         parseRankings(i, d.sorted, year, type, access_token)
     })
     ## un/follow
-    auth_token <- auth_obj$auth_token
     cat("\n")
     for (i in 1:nrow(follow)) {
         artist <- follow[i, "Artist"]
@@ -398,7 +397,7 @@ for (yt in year_types) {
                 call. = FALSE, immediate. = TRUE
             )
         } else {
-            auth_token <- updateFollowing(artist, artist.id, fllw, auth_token)
+            access_token <- updateFollowing(artist, artist.id, fllw, access_token)
         }
     }
     d.out <- data.frame(

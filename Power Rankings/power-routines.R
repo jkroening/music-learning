@@ -747,7 +747,7 @@ parseGenre <- function(genre) {
     }
 }
 
-updateFollowing <- function(artist, artist.id, follow, auth_token) {
+updateFollowing <- function(artist, artist.id, follow, access_token) {
     if (!isTRUE(Sys.getenv("SPOTIFY_CLIENT_ID") == Sys.getenv("PRIMARY_SPOTIFY_CLIENT_ID"))) {
         invisible(readline(
             prompt = paste0(
@@ -757,16 +757,16 @@ updateFollowing <- function(artist, artist.id, follow, auth_token) {
             )
         ))
         auth_obj <- auth()
-        auth_token <- auth_obj$auth_token
+        access_token <- auth_obj$access_token
     }
     tryCatch({
         if (follow) {
             response <- spotifyr::follow_artists_or_users(
-                "artist", c(artist.id), auth_token
+                "artist", ids = c(artist.id), authorization = access_token
             )
         } else {
             auth_header <- httr::add_headers(
-                Authorization = paste0("Bearer ", auth_token)
+                Authorization = paste0("Bearer ", access_token)
             )
             response <- httr:::DELETE(
                 "https://api.spotify.com/v1/me/following",
@@ -784,9 +784,9 @@ updateFollowing <- function(artist, artist.id, follow, auth_token) {
             call. = FALSE,
             immediate. = TRUE
         )
-        return(auth_token)
+        return(access_token)
     })
-    return(auth_token)
+    return(access_token)
 }
 
 auth <- function(secondary = FALSE, code = TRUE) {

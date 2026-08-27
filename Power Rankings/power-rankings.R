@@ -17,6 +17,7 @@ suppressMessages(library(spotifyr))
 suppressMessages(library(dplyr))
 suppressMessages(library(stringi))
 source("power-routines.R")
+source("spotify-routines.R")
 options(warn = 1)
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -60,16 +61,16 @@ if (any(yrs$yrs > 1)) {
     stop("Fix the Year tag and try again.", call. = FALSE)
 }
 check_lps <- lps %>%
-    add_count(Album) %>%
     group_by(Album) %>%
     summarize(
-        Artist = first(Artist), n = unique(n),
+        Artist = first(Artist),
+        n = n(),
         TotalTime = sum(Time) / 60,
         .groups = "keep"
     ) %>%
     select(Artist, Album, n, TotalTime) %>%
     mutate(invalid = TotalTime < 30 | n < 8) %>%
-    as.data.frame
+    as.data.frame()
 if (any(check_lps$invalid)) {
     cat(paste0("The following releases are not tagged as an EP yet are ",
                "shorter than 30 mins in length or have fewer than 8 ",
@@ -85,16 +86,16 @@ if (any(check_lps$invalid)) {
     }
 }
 check_eps <- eps %>%
-    add_count(Album) %>%
     group_by(Album) %>%
     summarize(
         Artist = first(Artist),
-        n = unique(n), TotalTime = sum(Time) / 60,
+        n = n(),
+        TotalTime = sum(Time) / 60,
         .groups = "keep"
     ) %>%
     select(Artist, Album, n, TotalTime) %>%
     mutate(invalid = (TotalTime >= 30 & n >= 8) | TotalTime < 10 | n < 3) %>%
-    as.data.frame
+    as.data.frame()
 if (any(check_eps$invalid)) {
     cat(paste0("The following releases are either too long or too short to ",
                "be EPs:\n\n"))
@@ -369,7 +370,7 @@ for (yt in year_types) {
     cat("\n")
     for (i in 1:nrow(follow)) {
         artist <- follow[i, "Artist"]
-        artists <- spotifyr:::search_spotify(
+        artists <- search_spotify(
             decodeString(artist),
             type = "artist",
             market = "US",
